@@ -3,10 +3,10 @@
 
 using System;
 using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit.Experimental;
 using System.Reflection.Emit.Experimental.Tests;
 using Xunit;
 
@@ -80,17 +80,17 @@ namespace Experiment.Tests.Fields
                         Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
                     }
                 }
+
                 // Field Comparison
                 for (int j = 0; j < sourceType.GetFields().Length; j++)
                 {
-                    FieldInfo sourceMethod = sourceType.GetFields()[j];
-                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+                    FieldInfo sourceField = sourceType.GetFields()[j];
+                    FieldInfo fieldFromDisk = typeFromDisk.GetFields()[j];
 
-                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
+                    Assert.Equal(sourceField.Name, fieldFromDisk.Name);
+                    Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
+                    Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
                 }
-
             }
         }
 
@@ -150,12 +150,12 @@ namespace Experiment.Tests.Fields
                 // Field Comparison
                 for (int j = 0; j < sourceType.GetFields().Length; j++)
                 {
-                    FieldInfo sourceMethod = sourceType.GetFields()[j];
-                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+                    FieldInfo sourceField = sourceType.GetFields()[j];
+                    FieldInfo fieldFromDisk = typeFromDisk.GetFields()[j];
 
-                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
+                    Assert.Equal(sourceField.Name, fieldFromDisk.Name);
+                    Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
+                    Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
                 }
             }
         }
@@ -217,12 +217,12 @@ namespace Experiment.Tests.Fields
                 // Field Comparison
                 for (int j = 0; j < sourceType.GetFields().Length; j++)
                 {
-                    FieldInfo sourceMethod = sourceType.GetFields()[j];
-                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+                    FieldInfo sourceField = sourceType.GetFields()[j];
+                    FieldInfo fieldFromDisk = typeFromDisk.GetFields()[j];
 
-                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
+                    Assert.Equal(sourceField.Name, fieldFromDisk.Name);
+                    Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
+                    Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
                 }
             }
         }
@@ -234,7 +234,7 @@ namespace Experiment.Tests.Fields
             AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
 
             //Construct its types via reflection.
-            Type[] types = new Type[] { typeof(INoMethod), typeof(INoMethod2), typeof };
+            Type[] types = new Type[] { typeof(INoMethod), typeof(INoMethod2) };
 
             // Generate DLL from these and save it to Disk.
             AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
@@ -283,12 +283,12 @@ namespace Experiment.Tests.Fields
                 // Field Comparison
                 for (int j = 0; j < sourceType.GetFields().Length; j++)
                 {
-                    FieldInfo sourceMethod = sourceType.GetFields()[j];
-                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+                    FieldInfo sourceField = sourceType.GetFields()[j];
+                    FieldInfo fieldFromDisk = typeFromDisk.GetFields()[j];
 
-                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
+                    Assert.Equal(sourceField.Name, fieldFromDisk.Name);
+                    Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
+                    Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
                 }
             }
         }
@@ -349,12 +349,12 @@ namespace Experiment.Tests.Fields
                 // Field Comparison
                 for (int j = 0; j < sourceType.GetFields().Length; j++)
                 {
-                    FieldInfo sourceMethod = sourceType.GetFields()[j];
-                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+                    FieldInfo sourceField = sourceType.GetFields()[j];
+                    FieldInfo fieldFromDisk = typeFromDisk.GetFields()[j];
 
-                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
+                    Assert.Equal(sourceField.Name, fieldFromDisk.Name);
+                    Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
+                    Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
                 }
             }
         }
@@ -420,12 +420,12 @@ namespace Experiment.Tests.Fields
                 // Field Comparison
                 for (int j = 0; j < sourceType.GetFields().Length; j++)
                 {
-                    FieldInfo sourceMethod = sourceType.GetFields()[j];
-                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+                    FieldInfo sourceField = sourceType.GetFields()[j];
+                    FieldInfo fieldFromDisk = typeFromDisk.GetFields()[j];
 
-                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
+                    Assert.Equal(sourceField.Name, fieldFromDisk.Name);
+                    Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
+                    Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
                 }
             }
         }
@@ -488,12 +488,12 @@ namespace Experiment.Tests.Fields
                 // Field Comparison
                 for (int j = 0; j < sourceType.GetFields().Length; j++)
                 {
-                    FieldInfo sourceMethod = sourceType.GetFields()[j];
-                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+                    FieldInfo sourceField = sourceType.GetFields()[j];
+                    FieldInfo fieldFromDisk = typeFromDisk.GetFields()[j];
 
-                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
+                    Assert.Equal(sourceField.Name, fieldFromDisk.Name);
+                    Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
+                    Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
                 }
             }
         }
@@ -502,8 +502,9 @@ namespace Experiment.Tests.Fields
     //  Test Interfaces
     public struct INoMethod
     {
-        int i;
-        public int getter()
+        public System.Int32 i;
+        struct bye { };
+        public int Getter()
         {
             i = 5;
             return i;
@@ -512,8 +513,9 @@ namespace Experiment.Tests.Fields
 
     public class INoMethod2 
     {
-        string j;
-        public string getter()
+        private string j;
+        int[] numbers = new int[5];
+        public string Getter()
         {
             j = "hello";
             return j;
@@ -538,9 +540,12 @@ namespace Experiment.Tests.Fields
 
     public class IOneMethod 
     {
-        string Func(int a, string b)
+        static string hello = "hello";
+        LinkedList<string> stuff = new LinkedList<string>();
+        struct bye { };
+        static string Func(int a, string b)
         {
-            return "";
+            return hello;
         }
     }
 
