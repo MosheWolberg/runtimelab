@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 
 namespace System.Reflection.Emit.Experimental
 {
@@ -35,7 +36,7 @@ namespace System.Reflection.Emit.Experimental
         internal class TypeReferenceWrapper
         {
             internal readonly Type type;
-            internal int parentToken = 0;
+            internal EntityHandle parentToken;
 
             public TypeReferenceWrapper(Type type)
             {
@@ -47,7 +48,7 @@ namespace System.Reflection.Emit.Experimental
                 return obj is TypeReferenceWrapper wrapper
                     && EqualityComparer<string>.Default.Equals(type.Name, wrapper.type.Name)
                     && EqualityComparer<string>.Default.Equals(type.Namespace, wrapper.type.Namespace)
-                    && parentToken == wrapper.parentToken;
+                    && EqualityComparer<EntityHandle>.Default.Equals(parentToken, wrapper.parentToken);
             }
 
             public override int GetHashCode()
@@ -60,7 +61,7 @@ namespace System.Reflection.Emit.Experimental
         internal class MethodReferenceWrapper
         {
             internal readonly MethodBase method;
-            internal int parentToken = 0;
+            internal EntityHandle parentToken;
 
             public MethodReferenceWrapper(MethodBase method)
             {
@@ -72,7 +73,7 @@ namespace System.Reflection.Emit.Experimental
                 return obj is MethodReferenceWrapper wrapper
                     && EqualityComparer<string>.Default.Equals(method.Name, wrapper.method.Name)
                     && EqualityComparer<string>.Default.Equals(method.ToString(), wrapper.method.ToString())
-                    && parentToken == wrapper.parentToken;
+                    && EqualityComparer<EntityHandle>.Default.Equals(parentToken, wrapper.parentToken);
             }
 
             public override int GetHashCode()
@@ -83,13 +84,13 @@ namespace System.Reflection.Emit.Experimental
 
         internal class CustomAttributeWrapper
         {
-            internal ConstructorInfo con;
+            internal ConstructorInfo constructorInfo;
             internal byte[] binaryAttribute;
-            internal int conToken = 0;
+            internal EntityHandle conToken;
 
-            public CustomAttributeWrapper(ConstructorInfo con, byte[] binaryAttribute)
+            public CustomAttributeWrapper(ConstructorInfo constructorInfo, byte[] binaryAttribute)
             {
-                this.con = con;
+                this.constructorInfo = constructorInfo;
                 this.binaryAttribute = binaryAttribute;
             }
              

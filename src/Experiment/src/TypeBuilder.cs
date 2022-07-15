@@ -3,6 +3,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Security.Principal;
 using static System.Reflection.Emit.Experimental.EntityWrappers;
 
 namespace System.Reflection.Emit.Experimental
@@ -16,15 +19,18 @@ namespace System.Reflection.Emit.Experimental
         public override string? Namespace { get; }
         internal TypeAttributes UserTypeAttribute { get; set; }
         internal List<MethodBuilder> _methodDefStore = new List<MethodBuilder>();
+        internal List<FieldBuilder> _fieldDefStore = new List<FieldBuilder>();
         internal List<CustomAttributeWrapper> _customAttributes = new();
+        internal EntityHandle _selfToken;
+        internal EntityHandle? _baseToken;
 
-        internal TypeBuilder(string name, ModuleBuilder module, Assembly assembly, TypeAttributes typeAttributes)
+        internal TypeBuilder(string name, ModuleBuilder module, Assembly assembly, TypeAttributes typeAttributes, EntityHandle token, Type? baseType)
         {
             Name = name;
             Module = module;
             Assembly = assembly;
             UserTypeAttribute = typeAttributes;
-
+            _selfToken = token;
 
             //Extract namespace from name
             int idx = Name.LastIndexOf('.');
@@ -32,6 +38,12 @@ namespace System.Reflection.Emit.Experimental
             {
                 Namespace = Name[..idx];
                 Name = Name[(idx + 1)..];
+            }
+
+            // Get references to baseType
+            if (baseType != null)
+            {
+                _baseToken = Module.AddorGetTypeReference(baseType);
             }
         }
 
@@ -45,6 +57,7 @@ namespace System.Reflection.Emit.Experimental
         {
             MethodBuilder methodBuilder = new(name, attributes, callingConvention, returnType, parameterTypes, this);
             _methodDefStore.Add(methodBuilder);
+            Module._methodDefCount++;
             return methodBuilder;
         }
 
@@ -54,11 +67,11 @@ namespace System.Reflection.Emit.Experimental
             throw new NotImplementedException();
         }
 
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute)
+        public void SetCustomAttribute(System.Reflection.ConstructorInfo constructorInfo, byte[] binaryAttribute)
         {
-            if (con == null)
+            if (constructorInfo == null)
             {
-                throw new ArgumentNullException(nameof(con));
+                throw new ArgumentNullException(nameof(constructorInfo));
             }
 
             if (binaryAttribute == null)
@@ -66,7 +79,7 @@ namespace System.Reflection.Emit.Experimental
                 throw new ArgumentNullException(nameof(binaryAttribute)); // This is incorrect
             }
 
-            if (con.DeclaringType == null)
+            if (constructorInfo.DeclaringType == null)
             {
                 throw new ArgumentException("Attribute constructor has no type.");
             }
@@ -76,55 +89,23 @@ namespace System.Reflection.Emit.Experimental
             //If it is, simply alter the TypeAttributes.
             //We want to handle this before the type metadata is generated.
 
-            if (con.DeclaringType.Name.Equals("ComImportAttribute"))
+            if (constructorInfo.DeclaringType.Name.Equals("ComImportAttribute"))
             {
                 Debug.WriteLine("Modifying internal flags");
                 UserTypeAttribute |= TypeAttributes.Import;
             }
             else
             {
-                AssemblyReferenceWrapper assemblyReference = new AssemblyReferenceWrapper(con.DeclaringType.Assembly);
-                TypeReferenceWrapper typeReference = new TypeReferenceWrapper(con.DeclaringType);
-                MethodReferenceWrapper methodReference = new MethodReferenceWrapper(con);
-                CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(con, binaryAttribute);
-
-                if (!Module._assemblyRefStore.Contains(assemblyReference)) // Avoid adding the same assembly twice
-                {
-                    Module._assemblyRefStore.Add(assemblyReference);
-                    typeReference.parentToken = Module._nextAssemblyRefRowId++;
-                }
-                else
-                {
-                    typeReference.parentToken = Module._assemblyRefStore.IndexOf(assemblyReference)+1; // Add 1 to account for zero based indexing
-                }
-
-                if (!Module._typeRefStore.Contains(typeReference)) // Avoid adding the same type twice
-                {
-                    Module._typeRefStore.Add(typeReference);
-                    methodReference.parentToken = Module._nextTypeRefRowId++;
-                }
-                else
-                {
-                    methodReference.parentToken = Module._typeRefStore.IndexOf(typeReference)+1;
-                }
-
-                if (!Module._methodRefStore.Contains(methodReference)) // Avoid add the same method twice
-                {
-                    Module._methodRefStore.Add(methodReference);
-                    customAttribute.conToken = Module._nextMethodRefRowId++;
-                }
-                else
-                {
-                    customAttribute.conToken = Module._methodRefStore.IndexOf(methodReference) + 1;
-                }
-
+                CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(constructorInfo,binaryAttribute);
+                EntityHandle constructorHandle = Module.AddorGetMethodReference(constructorInfo);
+                customAttribute.conToken = constructorHandle;
                 _customAttributes.Add(customAttribute);
             }
         }
 
         public void SetCustomAttribute(System.Reflection.Emit.Experimental.CustomAttributeBuilder customBuilder)
         {
-            SetCustomAttribute(customBuilder.m_con, customBuilder.m_blob);
+            SetCustomAttribute(customBuilder.Constructor, customBuilder._blob);
         }
 
 
@@ -176,8 +157,13 @@ namespace System.Reflection.Emit.Experimental
         public System.Reflection.Emit.EventBuilder DefineEvent(string name, System.Reflection.EventAttributes attributes, System.Type eventtype)
             => throw new NotImplementedException();
 
-        public System.Reflection.Emit.FieldBuilder DefineField(string fieldName, System.Type type, System.Reflection.FieldAttributes attributes)
-            => throw new NotImplementedException();
+        public System.Reflection.Emit.Experimental.FieldBuilder DefineField(string fieldName, System.Type type, System.Reflection.FieldAttributes attributes)
+        {
+            FieldBuilder fieldBuilder = new FieldBuilder(this,fieldName,type,null,attributes,MetadataTokens.EntityHandle(Module._fieldDefCount+1));
+            _fieldDefStore.Add(fieldBuilder);
+            Module._fieldDefCount++;
+            return fieldBuilder;
+        }
 
         public System.Reflection.Emit.FieldBuilder DefineField(string fieldName, System.Type type, System.Type[]? requiredCustomModifiers, System.Type[]? optionalCustomModifiers, System.Reflection.FieldAttributes attributes) => throw new NotImplementedException();
 

@@ -30,24 +30,24 @@ namespace System.Reflection.Emit.Experimental
             hashValue: default); // not sure where to find hashValue.
         }
 
-        internal static TypeDefinitionHandle addTypeDef(TypeBuilder typeBuilder, MetadataBuilder metadata, int methodToken)
+        internal static TypeDefinitionHandle addTypeDef(TypeBuilder typeBuilder, MetadataBuilder metadata, int methodToken, int fieldToken, EntityHandle? baseType)
         {
             //Add type metadata
             return metadata.AddTypeDefinition(
                 attributes: typeBuilder.UserTypeAttribute,
                 (typeBuilder.Namespace == null) ? default : metadata.GetOrAddString(typeBuilder.Namespace),
                 name: metadata.GetOrAddString(typeBuilder.Name),
-                baseType: default,//Inheritance to be added
-                fieldList: MetadataTokens.FieldDefinitionHandle(1),//Update once we support fields.
-                methodList: MetadataTokens.MethodDefinitionHandle(methodToken));
+                baseType: baseType == null ? default : (EntityHandle) baseType,
+                fieldList: MetadataTokens.FieldDefinitionHandle(fieldToken),
+                methodList: MetadataTokens.MethodDefinitionHandle(methodToken)); 
         }
 
-        internal static TypeReferenceHandle AddTypeReference(MetadataBuilder metadata, Type type, AssemblyReferenceHandle parent)
+        internal static TypeReferenceHandle AddTypeReference(MetadataBuilder metadata, Type type, EntityHandle parent)
         {
             return AddTypeReference(metadata, parent, type.Name, type.Namespace);
         }
 
-        internal static TypeReferenceHandle AddTypeReference(MetadataBuilder metadata, AssemblyReferenceHandle parent, string name, string? nameSpace)
+        internal static TypeReferenceHandle AddTypeReference(MetadataBuilder metadata, EntityHandle parent, string name, string? nameSpace)
         {
             return metadata.AddTypeReference(
                 parent,
@@ -56,9 +56,9 @@ namespace System.Reflection.Emit.Experimental
                 );
         }
 
-        internal static MemberReferenceHandle AddConstructorReference(MetadataBuilder metadata, TypeReferenceHandle parent, MethodBase method)
+        internal static MemberReferenceHandle AddConstructorReference(MetadataBuilder metadata, EntityHandle parent, MethodBase method, ModuleBuilder module)
         {
-            var blob = SignatureHelper.MethodSignatureEnconder(method.GetParameters(), null, true);
+            var blob = SignatureHelper.MethodSignatureEncoder(method.GetParameters(), null, true, module);
             return metadata.AddMemberReference(
                 parent,
                 metadata.GetOrAddString(method.Name),
@@ -66,16 +66,21 @@ namespace System.Reflection.Emit.Experimental
                 );
         }
 
-        internal static MethodDefinitionHandle AddMethodDefintion(MetadataBuilder metadata, MethodBuilder methodBuilder)
+        internal static MethodDefinitionHandle AddMethodDefintion(MetadataBuilder metadata, MethodBuilder methodBuilder, ModuleBuilder module)
         {
             return metadata.AddMethodDefinition(
                 methodBuilder.Attributes,
                 MethodImplAttributes.IL,
                 metadata.GetOrAddString(methodBuilder.Name),
-                metadata.GetOrAddBlob(SignatureHelper.MethodSignatureEnconder(methodBuilder._parameters, methodBuilder._returnType, !methodBuilder.IsStatic)),
+                metadata.GetOrAddBlob(SignatureHelper.MethodSignatureEncoder(methodBuilder._parameters, methodBuilder._returnType, !methodBuilder.IsStatic,module)),
                 -1, //No body supported
                 parameterList: default
                 );
+        }
+
+        internal static FieldDefinitionHandle AddFieldDefinition(MetadataBuilder metadata, FieldBuilder fieldBuilder)
+        {
+            return metadata.AddFieldDefinition(fieldBuilder.Attributes, metadata.GetOrAddString(fieldBuilder.Name), metadata.GetOrAddBlob(fieldBuilder.FieldSignature));
         }
     }
 }

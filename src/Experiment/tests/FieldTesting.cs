@@ -10,13 +10,13 @@ using System.Reflection.Emit.Experimental;
 using System.Reflection.Emit.Experimental.Tests;
 using Xunit;
 
-namespace Experiment.Tests.Basic
+namespace Experiment.Tests.Fields
 {
 
-    public class ReflectionTesting : IDisposable
+    public class FieldTesting : IDisposable
     {
         internal string fileLocation;
-        public ReflectionTesting()
+        public FieldTesting()
         {
             const bool _keepFiles = true; 
             TempFileCollection _tfc;
@@ -36,6 +36,72 @@ namespace Experiment.Tests.Basic
 
             //Construct its types via reflection.
             Type[] types = new Type[] { typeof(IMultipleMethod) };
+
+            // Generate DLL from these and save it to Disk.
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation, null);
+
+            // Read said assembly back from Disk using MetadataLoadContext
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+
+            // Now compare them:
+
+            // AssemblyName
+            Assert.NotNull(assemblyFromDisk);
+            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
+
+            // Module Name
+            Module moduleFromDisk = assemblyFromDisk.Modules.First();
+            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
+
+            // Type comparisons
+            for (int i = 0; i < types.Length; i++)
+            {
+                Type sourceType = types[i];
+                Type typeFromDisk = moduleFromDisk.GetTypes()[i];
+
+                Assert.Equal(sourceType.Name, typeFromDisk.Name);
+                Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
+                Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
+
+                // Method comparison
+                for (int j = 0; j < sourceType.GetMethods().Length; j++)
+                {
+                    MethodInfo sourceMethod = sourceType.GetMethods()[j];
+                    MethodInfo methodFromDisk = typeFromDisk.GetMethods()[j];
+
+                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                    Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+                    // Parameter comparison
+                    for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
+                    {
+                        ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
+                        ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
+                        Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
+                    }
+                }
+                // Field Comparison
+                for (int j = 0; j < sourceType.GetFields().Length; j++)
+                {
+                    FieldInfo sourceMethod = sourceType.GetFields()[j];
+                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+
+                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
+                }
+
+            }
+        }
+
+        [Fact]
+        public void OneInterfaceWithoutMethods()
+        {
+            // Construct an assembly name.
+            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
+
+            //Construct its types via reflection.
+            Type[] types = new Type[] { typeof(INoMethod) };
 
             // Generate DLL from these and save it to Disk.
             AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
@@ -80,60 +146,16 @@ namespace Experiment.Tests.Basic
                         Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
                     }
                 }
-            }
-        }
 
-        [Fact]
-        public void OneInterfaceWithoutMethods()
-        {
-            // Construct an assembly name.
-            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
-
-            //Construct its types via reflection.
-            Type[] types = new Type[] { typeof(INoMethod) };
-
-            // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation,null);
-
-            // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
-
-            // Now compare them:
-
-            // AssemblyName
-            Assert.NotNull(assemblyFromDisk);
-            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
-
-            // Module Name
-            Module moduleFromDisk = assemblyFromDisk.Modules.First();
-            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
-
-            // Type comparisons
-            for (int i = 0; i < types.Length; i++)
-            {
-                Type sourceType = types[i];
-                Type typeFromDisk = moduleFromDisk.GetTypes()[i];
-
-                Assert.Equal(sourceType.Name, typeFromDisk.Name);
-                Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
-                Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
-
-                // Method comparison
-                for (int j = 0; j < sourceType.GetMethods().Length; j++)
+                // Field Comparison
+                for (int j = 0; j < sourceType.GetFields().Length; j++)
                 {
-                    MethodInfo sourceMethod = sourceType.GetMethods()[j];
-                    MethodInfo methodFromDisk = typeFromDisk.GetMethods()[j];
+                    FieldInfo sourceMethod = sourceType.GetFields()[j];
+                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
 
                     Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
                     Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                    Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
-                    // Parameter comparison
-                    for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
-                    {
-                        ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
-                        ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
-                        Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
-                    }
+                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
                 }
             }
         }
@@ -191,17 +213,28 @@ namespace Experiment.Tests.Basic
                         Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
                     }
                 }
+
+                // Field Comparison
+                for (int j = 0; j < sourceType.GetFields().Length; j++)
+                {
+                    FieldInfo sourceMethod = sourceType.GetFields()[j];
+                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+
+                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
+                }
             }
         }
 
         [Fact]
-        public void TwoEmptyInterfaces()
+        public void TwoEmptyInterfacesANdEnum()
         {
             // Construct an assembly name.
             AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
 
             //Construct its types via reflection.
-            Type[] types = new Type[] { typeof(INoMethod), typeof(INoMethod2) };
+            Type[] types = new Type[] { typeof(INoMethod), typeof(INoMethod2), typeof };
 
             // Generate DLL from these and save it to Disk.
             AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
@@ -245,6 +278,17 @@ namespace Experiment.Tests.Basic
                         ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
                         Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
                     }
+                }
+
+                // Field Comparison
+                for (int j = 0; j < sourceType.GetFields().Length; j++)
+                {
+                    FieldInfo sourceMethod = sourceType.GetFields()[j];
+                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+
+                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
                 }
             }
         }
@@ -300,6 +344,17 @@ namespace Experiment.Tests.Basic
                         ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
                         Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
                     }
+                }
+
+                // Field Comparison
+                for (int j = 0; j < sourceType.GetFields().Length; j++)
+                {
+                    FieldInfo sourceMethod = sourceType.GetFields()[j];
+                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+
+                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
                 }
             }
         }
@@ -361,6 +416,17 @@ namespace Experiment.Tests.Basic
                         Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
                     }
                 }
+
+                // Field Comparison
+                for (int j = 0; j < sourceType.GetFields().Length; j++)
+                {
+                    FieldInfo sourceMethod = sourceType.GetFields()[j];
+                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+
+                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
+                }
             }
         }
 
@@ -418,23 +484,46 @@ namespace Experiment.Tests.Basic
                         Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
                     }
                 }
+
+                // Field Comparison
+                for (int j = 0; j < sourceType.GetFields().Length; j++)
+                {
+                    FieldInfo sourceMethod = sourceType.GetFields()[j];
+                    FieldInfo methodFromDisk = typeFromDisk.GetFields()[j];
+
+                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                    Assert.Equal(sourceMethod.FieldType, methodFromDisk.FieldType);
+                }
             }
         }
     }
 
     //  Test Interfaces
-    public interface INoMethod
+    public struct INoMethod
     {
-
+        int i;
+        public int getter()
+        {
+            i = 5;
+            return i;
+        }
     }
 
-    public interface INoMethod2
+    public class INoMethod2 
     {
+        string j;
+        public string getter()
+        {
+            j = "hello";
+            return j;
+        }
 
     }
 
     public interface IMultipleMethod
     {
+
         string[] Func(int a, string b);
         bool MoreFunc(int[] a, string b, bool c);
         BinaryWriter DoIExist();
@@ -447,8 +536,12 @@ namespace Experiment.Tests.Basic
         public int DisableRogueAI();
     }
 
-    public interface IOneMethod
+    public class IOneMethod 
     {
-        string Func(int a, string b);
+        string Func(int a, string b)
+        {
+            return "";
+        }
     }
+
 }
