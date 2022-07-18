@@ -6,20 +6,24 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit.Experimental
 {
-    //This static helper class adds common entities to a Metadata Builder.
+    // This static helper class adds common entities to a Metadata Builder.
     internal static class MetadataHelper
     {
         internal static AssemblyReferenceHandle AddAssemblyReference(Assembly assembly, MetadataBuilder metadata)
         {
             AssemblyName assemblyName = assembly.GetName();
+
             if (assemblyName == null || assemblyName.Name == null)
             {
-                throw new ArgumentNullException(nameof(assemblyName));
+                throw new ArgumentException(nameof(assemblyName));
             }
+
             return AddAssemblyReference(metadata, assemblyName.Name, assemblyName.Version, assemblyName.CultureName, assemblyName.GetPublicKey(), (AssemblyFlags)assemblyName.Flags);
         }
 
+#pragma warning disable SA1011 // Closing square brackets should be spaced correctly
         internal static AssemblyReferenceHandle AddAssemblyReference(MetadataBuilder metadata, string name, Version? version, string? culture, byte[]? publicKey, AssemblyFlags flags)
+#pragma warning restore SA1011 // Closing square brackets should be spaced correctly
         {
             return metadata.AddAssemblyReference(
             name: metadata.GetOrAddString(name),
@@ -30,16 +34,16 @@ namespace System.Reflection.Emit.Experimental
             hashValue: default); // not sure where to find hashValue.
         }
 
-        internal static TypeDefinitionHandle addTypeDef(TypeBuilder typeBuilder, MetadataBuilder metadata, int methodToken, int fieldToken, EntityHandle? baseType)
+        internal static TypeDefinitionHandle AddTypeDef(TypeBuilder typeBuilder, MetadataBuilder metadata, int methodToken, int fieldToken, EntityHandle? baseType)
         {
-            //Add type metadata
+            // Add type metadata
             return metadata.AddTypeDefinition(
                 attributes: typeBuilder.UserTypeAttribute,
                 (typeBuilder.Namespace == null) ? default : metadata.GetOrAddString(typeBuilder.Namespace),
                 name: metadata.GetOrAddString(typeBuilder.Name),
-                baseType: baseType == null ? default : (EntityHandle) baseType,
+                baseType: baseType == null ? default : (EntityHandle)baseType,
                 fieldList: MetadataTokens.FieldDefinitionHandle(fieldToken),
-                methodList: MetadataTokens.MethodDefinitionHandle(methodToken)); 
+                methodList: MetadataTokens.MethodDefinitionHandle(methodToken));
         }
 
         internal static TypeReferenceHandle AddTypeReference(MetadataBuilder metadata, Type type, EntityHandle parent)
@@ -52,8 +56,7 @@ namespace System.Reflection.Emit.Experimental
             return metadata.AddTypeReference(
                 parent,
                 (nameSpace == null) ? default : metadata.GetOrAddString(nameSpace),
-                metadata.GetOrAddString(name)
-                );
+                metadata.GetOrAddString(name));
         }
 
         internal static MemberReferenceHandle AddConstructorReference(MetadataBuilder metadata, EntityHandle parent, MethodBase method, ModuleBuilder module)
@@ -62,8 +65,7 @@ namespace System.Reflection.Emit.Experimental
             return metadata.AddMemberReference(
                 parent,
                 metadata.GetOrAddString(method.Name),
-                metadata.GetOrAddBlob(blob)
-                );
+                metadata.GetOrAddBlob(blob));
         }
 
         internal static MethodDefinitionHandle AddMethodDefintion(MetadataBuilder metadata, MethodBuilder methodBuilder, ModuleBuilder module)
@@ -72,10 +74,9 @@ namespace System.Reflection.Emit.Experimental
                 methodBuilder.Attributes,
                 MethodImplAttributes.IL,
                 metadata.GetOrAddString(methodBuilder.Name),
-                metadata.GetOrAddBlob(SignatureHelper.MethodSignatureEncoder(methodBuilder._parameters, methodBuilder._returnType, !methodBuilder.IsStatic,module)),
-                -1, //No body supported
-                parameterList: default
-                );
+                metadata.GetOrAddBlob(SignatureHelper.MethodSignatureEncoder(methodBuilder._parameters, methodBuilder._returnType, !methodBuilder.IsStatic, module)),
+                -1,
+                parameterList: default);
         }
 
         internal static FieldDefinitionHandle AddFieldDefinition(MetadataBuilder metadata, FieldBuilder fieldBuilder)

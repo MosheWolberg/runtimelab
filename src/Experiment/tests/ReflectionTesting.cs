@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -12,36 +12,36 @@ using Xunit;
 
 namespace Experiment.Tests.Basic
 {
-
     public class ReflectionTesting : IDisposable
     {
-        internal string fileLocation;
+        private string _fileLocation;
         public ReflectionTesting()
         {
-            const bool _keepFiles = true; 
-            TempFileCollection _tfc;
+            const bool _keepFiles = true;
+            TempFileCollection tfc;
             Directory.CreateDirectory("testDir");
-            _tfc = new TempFileCollection("testDir", false);
-            fileLocation = _tfc.AddExtension("dll", _keepFiles);
+            tfc = new TempFileCollection("testDir", false);
+            _fileLocation = tfc.AddExtension("dll", _keepFiles);
         }
 
         public void Dispose()
-        {}
-    
+        {
+        }
+
         [Fact]
         public void OneInterfaceWithMethods()
         {
             // Construct an assembly name.
             AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
 
-            //Construct its types via reflection.
+            // Construct its types via reflection.
             Type[] types = new Type[] { typeof(IMultipleMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation);
 
             // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
             // Now compare them:
 
@@ -89,14 +89,14 @@ namespace Experiment.Tests.Basic
             // Construct an assembly name.
             AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
 
-            //Construct its types via reflection.
+            // Construct its types via reflection.
             Type[] types = new Type[] { typeof(INoMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation,null);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null);
 
             // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
             // Now compare them:
 
@@ -138,21 +138,20 @@ namespace Experiment.Tests.Basic
             }
         }
 
-
         [Fact]
         public void EmptyInterfacesBetweenNonEmpty()
         {
             // Construct an assembly name.
             AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
 
-            //Construct its types via reflection.
+            // Construct its types via reflection.
             Type[] types = new Type[] { typeof(IAccess), typeof(INoMethod), typeof(INoMethod2), typeof(IMultipleMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation);
 
             // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
             // Now compare them:
 
@@ -200,14 +199,14 @@ namespace Experiment.Tests.Basic
             // Construct an assembly name.
             AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
 
-            //Construct its types via reflection.
+            // Construct its types via reflection.
             Type[] types = new Type[] { typeof(INoMethod), typeof(INoMethod2) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation);
 
             // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
             // Now compare them:
 
@@ -255,14 +254,14 @@ namespace Experiment.Tests.Basic
             // Construct an assembly name.
             AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
 
-            //Construct its types via reflection.
+            // Construct its types via reflection.
             Type[] types = new Type[] { typeof(INoMethod), typeof(IOneMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation);
 
             // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
             // Now compare them:
 
@@ -304,22 +303,20 @@ namespace Experiment.Tests.Basic
             }
         }
 
-
-
         [Fact]
         public void TwoIntefaceManyMethodsThenNone()
         {
             // Construct an assembly name.
             AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
 
-            //Construct its types via reflection.
+            // Construct its types via reflection.
             Type[] types = new Type[] { typeof(IMultipleMethod), typeof(INoMethod2) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation);
 
             // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
             // Now compare them:
 
@@ -370,14 +367,14 @@ namespace Experiment.Tests.Basic
             // Construct an assembly name.
             AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
 
-            //Construct its types via reflection.
+            // Construct its types via reflection.
             Type[] types = new Type[] { typeof(IMultipleMethod), typeof(INoMethod2), typeof(IAccess), typeof(IOneMethod), typeof(INoMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, fileLocation);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation);
 
             // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
 
             // Now compare them:
 
@@ -422,15 +419,13 @@ namespace Experiment.Tests.Basic
         }
     }
 
-    //  Test Interfaces
+    // Test Interfaces
     public interface INoMethod
     {
-
     }
 
     public interface INoMethod2
     {
-
     }
 
     public interface IMultipleMethod

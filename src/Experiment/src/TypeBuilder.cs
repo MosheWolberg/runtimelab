@@ -12,7 +12,6 @@ namespace System.Reflection.Emit.Experimental
 {
     public class TypeBuilder : System.Reflection.TypeInfo
     {
-
         public override string Name { get; }
         public override Assembly Assembly { get; }
         public override ModuleBuilder Module { get; }
@@ -20,7 +19,7 @@ namespace System.Reflection.Emit.Experimental
         internal TypeAttributes UserTypeAttribute { get; set; }
         internal List<MethodBuilder> _methodDefStore = new List<MethodBuilder>();
         internal List<FieldBuilder> _fieldDefStore = new List<FieldBuilder>();
-        internal List<CustomAttributeWrapper> _customAttributes = new();
+        internal List<CustomAttributeWrapper> _customAttributes = new ();
         internal EntityHandle _selfToken;
         internal EntityHandle? _baseToken;
 
@@ -32,12 +31,12 @@ namespace System.Reflection.Emit.Experimental
             UserTypeAttribute = typeAttributes;
             _selfToken = token;
 
-            //Extract namespace from name
+            // Extract namespace from name
             int idx = Name.LastIndexOf('.');
             if (idx != -1)
             {
                 Namespace = Name[..idx];
-                Name = Name[(idx + 1)..];
+                Name = Name[(idx + 1) ..];
             }
 
             // Get references to baseType
@@ -52,16 +51,15 @@ namespace System.Reflection.Emit.Experimental
             throw new NotImplementedException();
         }
 
-
         public System.Reflection.Emit.Experimental.MethodBuilder DefineMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes)
         {
-            MethodBuilder methodBuilder = new(name, attributes, callingConvention, returnType, parameterTypes, this);
+            MethodBuilder methodBuilder = new (name, attributes, callingConvention, returnType, parameterTypes, this);
             _methodDefStore.Add(methodBuilder);
             Module._methodDefCount++;
             return methodBuilder;
         }
 
-        //Implement next
+        // Implement next
         public System.Reflection.Emit.Experimental.MethodBuilder DefineMethod(string name, System.Reflection.MethodAttributes attributes)
         {
             throw new NotImplementedException();
@@ -84,11 +82,10 @@ namespace System.Reflection.Emit.Experimental
                 throw new ArgumentException("Attribute constructor has no type.");
             }
 
-            //We check whether the custom attribute is actually a pseudo-custom attribute. 
-            //(We have only done ComImport for the prototype, eventually all pseudo-custom attributes will be hard-coded.)
-            //If it is, simply alter the TypeAttributes.
-            //We want to handle this before the type metadata is generated.
-
+            // We check whether the custom attribute is actually a pseudo-custom attribute.
+            // (We have only done ComImport for the prototype, eventually all pseudo-custom attributes will be hard-coded.)
+            // If it is, simply alter the TypeAttributes.
+            // We want to handle this before the type metadata is generated.
             if (constructorInfo.DeclaringType.Name.Equals("ComImportAttribute"))
             {
                 Debug.WriteLine("Modifying internal flags");
@@ -96,9 +93,9 @@ namespace System.Reflection.Emit.Experimental
             }
             else
             {
-                CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(constructorInfo,binaryAttribute);
+                CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(constructorInfo, binaryAttribute);
                 EntityHandle constructorHandle = Module.AddorGetMethodReference(constructorInfo);
-                customAttribute.conToken = constructorHandle;
+                customAttribute.ConToken = constructorHandle;
                 _customAttributes.Add(customAttribute);
             }
         }
@@ -107,7 +104,6 @@ namespace System.Reflection.Emit.Experimental
         {
             SetCustomAttribute(customBuilder.Constructor, customBuilder._blob);
         }
-
 
         public const int UnspecifiedTypeSize = 0;
         public override string? AssemblyQualifiedName { get => throw new NotImplementedException(); }
@@ -159,7 +155,7 @@ namespace System.Reflection.Emit.Experimental
 
         public System.Reflection.Emit.Experimental.FieldBuilder DefineField(string fieldName, System.Type type, System.Reflection.FieldAttributes attributes)
         {
-            FieldBuilder fieldBuilder = new FieldBuilder(this,fieldName,type,null,attributes,MetadataTokens.EntityHandle(Module._fieldDefCount+1));
+            FieldBuilder fieldBuilder = new FieldBuilder(this, fieldName, type, null, attributes, MetadataTokens.EntityHandle(Module._fieldDefCount + 1));
             _fieldDefStore.Add(fieldBuilder);
             Module._fieldDefCount++;
             return fieldBuilder;
@@ -206,15 +202,15 @@ namespace System.Reflection.Emit.Experimental
         public System.Reflection.Emit.TypeBuilder DefineNestedType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Type[]? interfaces)
             => throw new NotImplementedException();
 
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshalling may dynamically access members that could be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshaling may dynamically access members that could be trimmed.")]
         public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet)
             => throw new NotImplementedException();
 
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshalling may dynamically access members that could be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshaling may dynamically access members that could be trimmed.")]
         public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet)
             => throw new NotImplementedException();
 
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshalling may dynamically access members that could be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("P/Invoke marshaling may dynamically access members that could be trimmed.")]
         public System.Reflection.Emit.MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? returnTypeRequiredCustomModifiers, System.Type[]? returnTypeOptionalCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? parameterTypeRequiredCustomModifiers, System.Type[][]? parameterTypeOptionalCustomModifiers, System.Runtime.InteropServices.CallingConvention nativeCallConv, System.Runtime.InteropServices.CharSet nativeCharSet)
             => throw new NotImplementedException();
 
@@ -292,7 +288,6 @@ namespace System.Reflection.Emit.Experimental
         [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public override System.Type? GetInterface(string name, bool ignoreCase)
             => throw new NotImplementedException();
-
 
         public override System.Reflection.InterfaceMapping GetInterfaceMap([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type interfaceType)
             => throw new NotImplementedException();

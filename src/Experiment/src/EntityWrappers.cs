@@ -14,86 +14,84 @@ namespace System.Reflection.Emit.Experimental
     {
         internal class AssemblyReferenceWrapper
         {
-            internal readonly Assembly assembly;
+            internal readonly Assembly Assembly;
 
             public AssemblyReferenceWrapper(Assembly assembly)
             {
-                this.assembly = assembly;
+                Assembly = assembly;
             }
 
             public override bool Equals(object? obj)
             {
                 return obj is AssemblyReferenceWrapper wrapper &&
-                       EqualityComparer<string>.Default.Equals(assembly.GetName().FullName, wrapper.assembly.GetName().FullName);
+                       EqualityComparer<string>.Default.Equals(Assembly.GetName().FullName, wrapper.Assembly.GetName().FullName);
             }
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(assembly.GetName().FullName);
+                return HashCode.Combine(Assembly.GetName().FullName);
             }
         }
 
         internal class TypeReferenceWrapper
         {
-            internal readonly Type type;
-            internal EntityHandle parentToken;
+            internal readonly Type Type;
+            internal EntityHandle ParentToken;
 
             public TypeReferenceWrapper(Type type)
             {
-                this.type = type;
+                Type = type;
             }
 
             public override bool Equals(object? obj)
             {
                 return obj is TypeReferenceWrapper wrapper
-                    && EqualityComparer<string>.Default.Equals(type.Name, wrapper.type.Name)
-                    && EqualityComparer<string>.Default.Equals(type.Namespace, wrapper.type.Namespace)
-                    && EqualityComparer<EntityHandle>.Default.Equals(parentToken, wrapper.parentToken);
+                    && EqualityComparer<string>.Default.Equals(Type.Name, wrapper.Type.Name)
+                    && EqualityComparer<string>.Default.Equals(Type.Namespace, wrapper.Type.Namespace)
+                    && EqualityComparer<EntityHandle>.Default.Equals(ParentToken, wrapper.ParentToken);
             }
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(type.Name, type.Namespace, parentToken);
+                return HashCode.Combine(Type.Name, Type.Namespace, ParentToken);
             }
-
         }
 
         internal class MethodReferenceWrapper
         {
-            internal readonly MethodBase method;
-            internal EntityHandle parentToken;
+            internal readonly MethodBase Method;
+            internal EntityHandle ParentToken;
 
             public MethodReferenceWrapper(MethodBase method)
             {
-                this.method = method;
+                Method = method;
             }
 
             public override bool Equals(object? obj)
             {
                 return obj is MethodReferenceWrapper wrapper
-                    && EqualityComparer<string>.Default.Equals(method.Name, wrapper.method.Name)
-                    && EqualityComparer<string>.Default.Equals(method.ToString(), wrapper.method.ToString())
-                    && EqualityComparer<EntityHandle>.Default.Equals(parentToken, wrapper.parentToken);
+                    && EqualityComparer<string>.Default.Equals(Method.Name, wrapper.Method.Name)
+                    && EqualityComparer<string>.Default.Equals(Method.ToString(), wrapper.Method.ToString())
+                    && EqualityComparer<EntityHandle>.Default.Equals(ParentToken, wrapper.ParentToken);
             }
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(method.Name, method.ToString(), parentToken);
+                return HashCode.Combine(Method.Name, Method.ToString(), ParentToken);
             }
         }
 
         internal class CustomAttributeWrapper
         {
-            internal ConstructorInfo constructorInfo;
-            internal byte[] binaryAttribute;
-            internal EntityHandle conToken;
+            internal ConstructorInfo ConstructorInfo;
+            internal byte[] BinaryAttribute;
+            internal EntityHandle ConToken;
 
             public CustomAttributeWrapper(ConstructorInfo constructorInfo, byte[] binaryAttribute)
             {
-                this.constructorInfo = constructorInfo;
-                this.binaryAttribute = binaryAttribute;
+                ConstructorInfo = constructorInfo;
+                BinaryAttribute = binaryAttribute;
             }
-             
         }
     }
 }

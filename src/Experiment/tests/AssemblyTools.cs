@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿ // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -16,6 +16,7 @@ namespace System.Reflection.Emit.Experimental.Tests
         {
             WriteAssemblyToDisk(assemblyName, types, fileLocation, null);
         }
+
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation, List<CustomAttributeBuilder> customAttributes)
         {
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, System.Reflection.Emit.AssemblyBuilderAccess.Run);
@@ -24,7 +25,7 @@ namespace System.Reflection.Emit.Experimental.Tests
 
             foreach (Type type in types)
             {
-                TypeBuilder tb = mb.DefineType(type.FullName, type.Attributes,type.BaseType);
+                TypeBuilder tb = mb.DefineType(type.FullName, type.Attributes, type.BaseType);
 
                 if (customAttributes != null)
                 {
@@ -49,6 +50,7 @@ namespace System.Reflection.Emit.Experimental.Tests
                     tb.DefineField(field.Name, field.FieldType, field.Attributes);
                 }
             }
+
             assemblyBuilder.Save(fileLocation);
         }
 
@@ -93,9 +95,8 @@ namespace System.Reflection.Emit.Experimental.Tests
                 var owner = mr.GetTypeDefinition(mdef.GetDeclaringType());
                 Debug.WriteLine($"Method name: {mname} is owned by {mr.GetString(owner.Name)}.");
             }
+
             Debug.WriteLine("Ended MetadataReader class");
         }
     }
-
-
 }
