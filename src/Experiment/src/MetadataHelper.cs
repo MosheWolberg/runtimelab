@@ -9,16 +9,14 @@ namespace System.Reflection.Emit.Experimental
     // This static helper class adds common entities to a Metadata Builder.
     internal static class MetadataHelper
     {
-        internal static AssemblyReferenceHandle AddAssemblyReference(Assembly assembly, MetadataBuilder metadata)
+        internal static AssemblyReferenceHandle AddAssemblyReference(AssemblyName assembly, MetadataBuilder metadata)
         {
-            AssemblyName assemblyName = assembly.GetName();
-
-            if (assemblyName == null || assemblyName.Name == null)
+            if (assembly == null || assembly.Name == null)
             {
-                throw new ArgumentException(nameof(assemblyName));
+                throw new ArgumentException("Could not add to metadata: " + nameof(assembly));
             }
 
-            return AddAssemblyReference(metadata, assemblyName.Name, assemblyName.Version, assemblyName.CultureName, assemblyName.GetPublicKey(), (AssemblyFlags)assemblyName.Flags);
+            return AddAssemblyReference(metadata, assembly.Name, assembly.Version, assembly.CultureName, assembly.GetPublicKey(), (AssemblyFlags)assembly.Flags);
         }
 
 #pragma warning disable SA1011 // Closing square brackets should be spaced correctly

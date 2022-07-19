@@ -14,9 +14,9 @@ namespace System.Reflection.Emit.Experimental
     {
         internal class AssemblyReferenceWrapper
         {
-            internal readonly Assembly Assembly;
+            internal readonly AssemblyName Assembly;
 
-            public AssemblyReferenceWrapper(Assembly assembly)
+            public AssemblyReferenceWrapper(AssemblyName assembly)
             {
                 Assembly = assembly;
             }
@@ -24,12 +24,12 @@ namespace System.Reflection.Emit.Experimental
             public override bool Equals(object? obj)
             {
                 return obj is AssemblyReferenceWrapper wrapper &&
-                       EqualityComparer<string>.Default.Equals(Assembly.GetName().FullName, wrapper.Assembly.GetName().FullName);
+                       EqualityComparer<string>.Default.Equals(Assembly.FullName, wrapper.Assembly.FullName);
             }
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(Assembly.GetName().FullName);
+                return HashCode.Combine(Assembly.FullName);
             }
         }
 

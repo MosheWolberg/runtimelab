@@ -107,7 +107,7 @@ namespace System.Reflection.Emit.Experimental.Tests.Custom
 
     public interface IMultipleMethod
     {
-        string Func(int a, string b);
+        BinaryReader Func(int a, string b);
         bool MoreFunc(int a, string b, bool c);
         bool DoIExist();
         void BuildAPerpetualMotionMachine();

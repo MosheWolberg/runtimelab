@@ -153,7 +153,19 @@ namespace System.Reflection.Emit.Experimental
             }
 
             TypeReferenceWrapper typeReferenceWrapper = new TypeReferenceWrapper(type);
-            typeReferenceWrapper.ParentToken = AddorGetAssemblyReference(type.Assembly);
+            AssemblyName correctedName = type.Assembly.GetName();
+
+            if (correctedName.FullName != null && correctedName.FullName.Contains("System.Private.CoreLib"))
+            {
+                if (type.Namespace == null)
+                {
+                    throw new ArgumentException("Unable to locate assembly of type: " + nameof(type));
+                }
+
+                correctedName = new AssemblyName(type.Namespace);
+            }
+
+            typeReferenceWrapper.ParentToken = AddorGetAssemblyReference(correctedName);
 
             if (_typeRefStore.Contains(typeReferenceWrapper))
             {
@@ -166,7 +178,7 @@ namespace System.Reflection.Emit.Experimental
             }
         }
 
-        internal EntityHandle AddorGetAssemblyReference(Assembly assembly)
+        internal EntityHandle AddorGetAssemblyReference(AssemblyName assembly)
         {
             AssemblyReferenceWrapper assemblyReference = new AssemblyReferenceWrapper(assembly);
             if (_assemblyRefStore.Contains(assemblyReference))
