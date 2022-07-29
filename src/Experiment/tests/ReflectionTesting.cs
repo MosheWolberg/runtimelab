@@ -6,7 +6,6 @@ using System.CodeDom.Compiler;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit.Experimental;
 using System.Reflection.Emit.Experimental.Tests;
 using Xunit;
 
@@ -93,7 +92,7 @@ namespace Experiment.Tests.Basic
             Type[] types = new Type[] { typeof(INoMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null, null);
 
             // Read said assembly back from Disk using MetadataLoadContext
             Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
@@ -432,7 +431,7 @@ namespace Experiment.Tests.Basic
     {
         string[] Func(int a, string b);
         bool MoreFunc(int[] a, string b, bool c);
-        BinaryWriter DoIExist();
+        System.IO.BinaryWriter DoIExist();
         void BuildAPerpetualMotionMachine();
     }
 

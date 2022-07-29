@@ -3,20 +3,21 @@
 
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace System.Reflection.Emit.Experimental.Tests.Custom
+namespace System.Reflection.Emit.Experimental.Tests.CustomCore
 {
     // Currently hard-coding in Custom Attributes using the CustomAttributeBuilder.
-    public class CustomAttributeTest : IDisposable
+    public class CustomAttributeFrameWorkTest : IDisposable
     {
+        private readonly string _newCore = Directory.GetCurrentDirectory() + "\\NovelCoreAssembly.dll";
         private List<CustomAttributeBuilder> _customAttributes = new List<CustomAttributeBuilder>();
         private string _fileLocation;
-        public CustomAttributeTest()
+        private MetadataLoadContext _context;
+        public CustomAttributeFrameWorkTest()
         {
             const bool _keepFiles = true;
             TempFileCollection tfc;
@@ -24,10 +25,16 @@ namespace System.Reflection.Emit.Experimental.Tests.Custom
             tfc = new TempFileCollection("testDir", false);
             _fileLocation = tfc.AddExtension("dll", _keepFiles);
 
-            _customAttributes.Add(new CustomAttributeBuilder(typeof(ComImportAttribute).GetConstructor(new Type[] { }), new object[] { }));
-            _customAttributes.Add(new CustomAttributeBuilder(typeof(GuidAttribute).GetConstructor(new Type[] { typeof(string) }), new object[] { "9ED54F84-A89D-4fcd-A854-44251E925F09" }));
+            // Get the array of runtime assemblies.
+            string[] runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
 
-        }
+            // Create the list of assembly paths consisting of runtime assemblies and the inspected assembly.
+            var paths = new List<string>(runtimeAssemblies);
+            paths.Add(_newCore);
+
+            var resolver = new PathAssemblyResolver(paths);
+            _context = new MetadataLoadContext(resolver, "NovelCoreAssembly");
+          }
 
         // Add three custom attributes to two types. One is pseudo custom attribute.
         // This also tests that Save doesn't have unnecessary duplicate references to same assembly, type etc.
@@ -42,10 +49,10 @@ namespace System.Reflection.Emit.Experimental.Tests.Custom
             Type[] types = new Type[] { typeof(IMultipleMethod), typeof(INoMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, _customAttributes, null);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, _customAttributes, _context);
 
             // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation, _newCore);
 
             // Now compare them:
 
@@ -65,6 +72,7 @@ namespace System.Reflection.Emit.Experimental.Tests.Custom
 
                 Assert.Equal(sourceType.Name, typeFromDisk.Name);
                 Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
+                Assert.Equal(sourceType.Assembly.FullName, typeFromDisk.Assembly.FullName);
                 Assert.Equal(sourceType.Attributes | TypeAttributes.Import, typeFromDisk.Attributes); // Pseudo-custom attributes are added to core TypeAttributes.
 
                 // Ordering of custom attributes is not preserved in metadata so we sort before comparing.
@@ -77,6 +85,9 @@ namespace System.Reflection.Emit.Experimental.Tests.Custom
                     CustomAttributeBuilder sourceAttribute = _customAttributes[j];
                     CustomAttributeData attributeFromDisk = attributesFromDisk[j];
                     Assert.Equal(sourceAttribute.Constructor.DeclaringType.ToString(), attributeFromDisk.AttributeType.ToString());
+                    Assert.Equal(sourceAttribute.Constructor.DeclaringType.Name, attributeFromDisk.AttributeType.Name);
+                    Assert.Equal(sourceAttribute.Constructor.DeclaringType.Namespace, attributeFromDisk.AttributeType.Namespace);
+                    Assert.Equal(sourceAttribute.Constructor.DeclaringType.Assembly.FullName, attributeFromDisk.AttributeType.Assembly.FullName);
                 }
 
                 // Method comparison
@@ -87,13 +98,16 @@ namespace System.Reflection.Emit.Experimental.Tests.Custom
 
                     Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
                     Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+
                     Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+                    Assert.Equal(sourceMethod.ReturnType.Assembly.FullName, methodFromDisk.ReturnType.Assembly.FullName);
                     // Parameter comparison
                     for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
                     {
                         ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
                         ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
                         Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
+                        Assert.Equal(sourceParamter.ParameterType.Assembly.FullName, paramterFromDisk.ParameterType.Assembly.FullName);
                     }
                 }
             }
@@ -104,15 +118,45 @@ namespace System.Reflection.Emit.Experimental.Tests.Custom
         }
     }
 
+    public struct INoMethod
+    {
+        public int I;
+        private struct Bye
+        {
+        }
+
+        public int Getter()
+        {
+            I = 5;
+            return I;
+        }
+    }
+
     public interface IMultipleMethod
     {
-        BinaryReader Func(int a, string b);
-        bool MoreFunc(int a, string b, bool c);
-        bool DoIExist();
+        string[] Func(int a, string b);
+        bool MoreFunc(int[] a, string b, bool c);
+        System.IO.BinaryWriter DoIExist();
         void BuildAPerpetualMotionMachine();
     }
 
-    public interface INoMethod
+    internal interface IAccess
     {
+        public TypeAttributes BuildAI(FieldAttributes field);
+        public int DisableRogueAI();
+    }
+
+    public class IOneMethod
+    {
+        private static string hello = "hello";
+
+        private struct Bye
+        {
+        }
+
+        internal static string Func(int a, string b)
+        {
+            return hello;
+        }
     }
 }

@@ -39,7 +39,7 @@ namespace Experiment.Tests.Fields
             Type[] types = new Type[] { typeof(IMultipleMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null, null);
 
             // Read said assembly back from Disk using MetadataLoadContext
             Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
@@ -500,7 +500,7 @@ namespace Experiment.Tests.Fields
     // Test Interfaces
     public struct INoMethod
     {
-        public System.Int32 I;
+        public int I;
         private struct Bye
         {
         }
@@ -528,7 +528,7 @@ namespace Experiment.Tests.Fields
     {
         string[] Func(int a, string b);
         bool MoreFunc(int[] a, string b, bool c);
-        BinaryWriter DoIExist();
+        System.IO.BinaryWriter DoIExist();
         void BuildAPerpetualMotionMachine();
     }
 

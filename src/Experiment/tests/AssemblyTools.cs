@@ -14,18 +14,26 @@ namespace System.Reflection.Emit.Experimental.Tests
     {
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation)
         {
-            WriteAssemblyToDisk(assemblyName, types, fileLocation, null);
+            WriteAssemblyToDisk(assemblyName, types, fileLocation, null, null);
         }
 
-        internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation, List<CustomAttributeBuilder> customAttributes)
+        internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation, List<CustomAttributeBuilder> customAttributes, MetadataLoadContext context)
         {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, System.Reflection.Emit.AssemblyBuilderAccess.Run);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, System.Reflection.Emit.AssemblyBuilderAccess.Run, context);
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
             foreach (Type type in types)
             {
-                TypeBuilder tb = mb.DefineType(type.FullName, type.Attributes, type.BaseType);
+                if (type == null)
+                {
+                    throw new ArgumentException("We have a null type: " + nameof(type));
+                }
+
+                Debug.WriteLine("Type: " + type);
+
+                Type contextType = ContextType(type);
+                TypeBuilder tb = mb.DefineType(contextType.FullName, contextType.Attributes, ContextType(contextType.BaseType));
 
                 if (customAttributes != null)
                 {
@@ -35,32 +43,64 @@ namespace System.Reflection.Emit.Experimental.Tests
                     }
                 }
 
-                foreach (var method in type.GetMethods())
+                foreach (var method in contextType.GetMethods())
                 {
-                    var paramTypes = Array.ConvertAll(method.GetParameters(), item => item.ParameterType);
-                    tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, paramTypes);
+                    var paramTypes = Array.ConvertAll(method.GetParameters(), item => ContextType(item.ParameterType));
+                    tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, ContextType(method.ReturnType), paramTypes);
                 }
 
-                foreach (var field in type.GetFields(
+                foreach (var field in contextType.GetFields(
                     BindingFlags.Instance |
                     BindingFlags.Static |
                     BindingFlags.NonPublic |
                     BindingFlags.Public))
                 {
-                    tb.DefineField(field.Name, field.FieldType, field.Attributes);
+                    tb.DefineField(field.Name, ContextType(field.FieldType), field.Attributes);
                 }
             }
 
             assemblyBuilder.Save(fileLocation);
+
+            Type ContextType(Type type)
+            {
+                if (type == null)
+                {
+                    return null;
+                }
+
+                Assembly contextAssembly = context.CoreAssembly;
+
+                if (contextAssembly == null)
+                {
+                    Debug.WriteLine($"Unable to locate specified context for {nameof(type)} , reverting to default context");
+                    return type;
+                }
+
+                Type contextType = contextAssembly.GetType((type.FullName == null) ? type.Name : type.FullName);
+
+                if (contextType == null)
+                {
+                    Debug.WriteLine($"Unable to locate specified context for {nameof(type)} , reverting to default context");
+                    return type;
+                }
+
+                return contextType;
+            }
         }
 
-        internal static Assembly TryLoadAssembly(string filePath)
+        internal static Assembly TryLoadAssembly(string filePath, string coreAssembly = null)
         {
             // Get the array of runtime assemblies.
             string[] runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
             // Create the list of assembly paths consisting of runtime assemblies and the inspected assembly.
             var paths = new List<string>(runtimeAssemblies);
             paths.Add(filePath);
+
+            if (coreAssembly != null)
+            {
+                paths.Add(coreAssembly);
+            }
+
             // Create PathAssemblyResolver that can resolve assemblies using the created list.
             var resolver = new PathAssemblyResolver(paths);
             var mlc = new MetadataLoadContext(resolver);

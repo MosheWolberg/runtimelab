@@ -16,33 +16,34 @@ namespace System.Reflection.Emit.Experimental
         private ConstructorInfo _constructorInfo;
         private object?[] _constructorArgs;
         internal byte[] _blob;
+        private MetadataLoadContext? _context;
 
         public ConstructorInfo Constructor { get => _constructorInfo;  }
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs)
-            : this(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(), Array.Empty<FieldInfo>(), Array.Empty<object>())
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, MetadataLoadContext? loadContext = null)
+            : this(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(), Array.Empty<FieldInfo>(), Array.Empty<object>(), loadContext)
         {
         }
 
         // public constructor to form the custom attribute with constructor, constructor
         // parameters and named properties.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object?[] propertyValues)
-            : this(con, constructorArgs, namedProperties, propertyValues, Array.Empty<FieldInfo>(), Array.Empty<object>())
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object?[] propertyValues, MetadataLoadContext? loadContext = null)
+            : this(con, constructorArgs, namedProperties, propertyValues, Array.Empty<FieldInfo>(), Array.Empty<object>(), loadContext)
         {
         }
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, FieldInfo[] namedFields, object?[] fieldValues)
-            : this(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(), namedFields, fieldValues)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, FieldInfo[] namedFields, object?[] fieldValues, MetadataLoadContext? loadContext = null)
+            : this(con, constructorArgs, Array.Empty<PropertyInfo>(), Array.Empty<object>(), namedFields, fieldValues, loadContext)
         {
         }
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object?[] propertyValues, FieldInfo[] namedFields, object?[] fieldValues)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs, PropertyInfo[] namedProperties, object?[] propertyValues, FieldInfo[] namedFields, object?[] fieldValues, MetadataLoadContext? loadContext = null)
         {
             ArgumentNullException.ThrowIfNull(con);
             ArgumentNullException.ThrowIfNull(constructorArgs);
@@ -77,6 +78,7 @@ namespace System.Reflection.Emit.Experimental
             // Cache information used elsewhere.
             _constructorInfo = con;
             _constructorArgs = new object?[constructorArgs.Length];
+            _context = loadContext;
             Array.Copy(constructorArgs, _constructorArgs, constructorArgs.Length);
 
             Type[] paramTypes;
@@ -228,10 +230,12 @@ namespace System.Reflection.Emit.Experimental
         {
             if (t.IsPrimitive)
             {
-                return t != typeof(IntPtr) && t != typeof(UIntPtr);
+                return t != ContextType(typeof(IntPtr)) && t != ContextType(typeof(UIntPtr));
             }
 
-            if (t == typeof(string) || t == typeof(Type))
+            Debug.WriteLine("String: " + ContextType(typeof(string)));
+
+            if (t == ContextType(typeof(string)) || t == ContextType(typeof(Type)))
             {
                 return true;
             }
@@ -259,23 +263,23 @@ namespace System.Reflection.Emit.Experimental
                 return t.GetArrayRank() == 1 && ValidateType(t.GetElementType() !);
             }
 
-            return t == typeof(object);
+            return t == ContextType(typeof(object));
         }
 
-        private static void VerifyTypeAndPassedObjectType(Type type, Type passedType, string paramName)
+        private void VerifyTypeAndPassedObjectType(Type type, Type passedType, string paramName)
         {
-            if (type != typeof(object) && Type.GetTypeCode(passedType) != Type.GetTypeCode(type))
+            if (type != ContextType(typeof(object)) && Type.GetTypeCode(passedType) != Type.GetTypeCode(type))
             {
                 throw new ArgumentException("Constant Doesn't Match");
             }
 
-            if (passedType == typeof(IntPtr) || passedType == typeof(UIntPtr))
+            if (passedType == ContextType(typeof(IntPtr)) || passedType == ContextType(typeof(UIntPtr)))
             {
                 throw new ArgumentException("Bad argument for custom attribute builder");
             }
         }
 
-        private static void EmitType(BinaryWriter writer, Type type)
+        private void EmitType(BinaryWriter writer, Type type)
         {
             if (type.IsPrimitive)
             {
@@ -327,11 +331,11 @@ namespace System.Reflection.Emit.Experimental
                 writer.Write((byte)CustomAttributeEncoding.Enum);
                 EmitString(writer, type.AssemblyQualifiedName!);
             }
-            else if (type == typeof(string))
+            else if (type == ContextType(typeof(string)))
             {
                 writer.Write((byte)CustomAttributeEncoding.String);
             }
-            else if (type == typeof(Type))
+            else if (type == ContextType(typeof(Type)))
             {
                 writer.Write((byte)CustomAttributeEncoding.Type);
             }
@@ -368,7 +372,7 @@ namespace System.Reflection.Emit.Experimental
             writer.Write(utf8Str);
         }
 
-        private static void EmitValue(BinaryWriter writer, Type type, object? value)
+        private void EmitValue(BinaryWriter writer, Type type, object? value)
         {
             if (type.IsEnum)
             {
@@ -403,7 +407,7 @@ namespace System.Reflection.Emit.Experimental
                         break;
                 }
             }
-            else if (type == typeof(string))
+            else if (type == ContextType(typeof(string)))
             {
                 if (value == null)
                 {
@@ -414,7 +418,7 @@ namespace System.Reflection.Emit.Experimental
                     EmitString(writer, (string)value);
                 }
             }
-            else if (type == typeof(Type))
+            else if (type == ContextType(typeof(Type)))
             {
                 if (value == null)
                 {
@@ -493,7 +497,7 @@ namespace System.Reflection.Emit.Experimental
                         break;
                 }
             }
-            else if (type == typeof(object))
+            else if (type == ContextType(typeof(object)))
             {
                 // Tagged object case. Type instances aren't actually Type, they're some subclass (such as RuntimeType or
                 // TypeBuilder), so we need to canonicalize this case back to Type. If we have a null value we follow the convention
@@ -503,7 +507,7 @@ namespace System.Reflection.Emit.Experimental
 
                 // value cannot be a "System.Object" object.
                 // If we allow this we will get into an infinite recursion
-                if (ot == typeof(object))
+                if (ot == ContextType(typeof(object)))
                 {
                     throw new ArgumentException("Bad Parameter Type For CAB");
                 }
@@ -595,6 +599,30 @@ namespace System.Reflection.Emit.Experimental
             ELEMENT_TYPE_HANDLE = 0x40,
             ELEMENT_TYPE_SENTINEL = 0x41, // sentinel for varargs
             ELEMENT_TYPE_PINNED = 0x45,
+        }
+
+        private Type ContextType(Type type)
+        {
+            if (_context == null)
+            {
+                return type;
+            }
+
+            if (_context.CoreAssembly == null)
+            {
+                Debug.WriteLine($"Unable to locate specified context for {nameof(type)} , reverting to runtime context");
+                return type;
+            }
+
+            Type? contextType = _context.CoreAssembly.GetType((type.FullName == null) ? type.Name : type.FullName);
+
+            if (contextType == null)
+            {
+                Debug.WriteLine($"Unable to locate specified context for {nameof(type)} , reverting to runtime context");
+                return type;
+            }
+
+            return contextType;
         }
     }
 }

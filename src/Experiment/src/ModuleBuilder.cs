@@ -2,14 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using static System.Reflection.Emit.Experimental.EntityWrappers;
 
 namespace System.Reflection.Emit.Experimental
 {
     public class ModuleBuilder : System.Reflection.Module
     {
+        internal Assembly? _contextAssembly;
+
         internal List<AssemblyReferenceWrapper> _assemblyRefStore = new List<AssemblyReferenceWrapper>();
 
         internal List<TypeReferenceWrapper> _typeRefStore = new List<TypeReferenceWrapper>();
@@ -27,10 +32,11 @@ namespace System.Reflection.Emit.Experimental
             get;
         }
 
-        internal ModuleBuilder(string name, Assembly assembly)
+        internal ModuleBuilder(string name, AssemblyBuilder assembly, Assembly? loadContext)
         {
             ScopeName = name;
             Assembly = assembly;
+            _contextAssembly = loadContext;
         }
 
         // Wherever possible metadata construction is done in module.
@@ -153,19 +159,7 @@ namespace System.Reflection.Emit.Experimental
             }
 
             TypeReferenceWrapper typeReferenceWrapper = new TypeReferenceWrapper(type);
-            AssemblyName correctedName = type.Assembly.GetName();
-
-            if (correctedName.FullName != null && correctedName.FullName.Contains("System.Private.CoreLib"))
-            {
-                if (type.Namespace == null)
-                {
-                    throw new ArgumentException("Unable to locate assembly of type: " + nameof(type));
-                }
-
-                correctedName = new AssemblyName(type.Namespace);
-            }
-
-            typeReferenceWrapper.ParentToken = AddorGetAssemblyReference(correctedName);
+            typeReferenceWrapper.ParentToken = AddorGetAssemblyReference(type.Assembly.GetName());
 
             if (_typeRefStore.Contains(typeReferenceWrapper))
             {
@@ -226,8 +220,7 @@ namespace System.Reflection.Emit.Experimental
 
         public System.Reflection.Emit.Experimental.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent)
         {
-            TypeBuilder type = new TypeBuilder(name, this, Assembly, attr,
-                MetadataTokens.TypeDefinitionHandle(_typeDefStore.Count + 1), parent);
+            TypeBuilder type = new TypeBuilder(name, this, Assembly, attr, MetadataTokens.TypeDefinitionHandle(_typeDefStore.Count + 1), parent);
             _typeDefStore.Add(type);
             return type;
         }

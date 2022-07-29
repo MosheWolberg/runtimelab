@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -86,55 +87,70 @@ namespace System.Reflection.Emit.Experimental
             }
 
             // We need to translate from Reflection.Type to SignatureTypeEncoder.
-            switch (type.FullName)
+            if (type == ContextType(typeof(bool), module))
             {
-                case "System.Boolean":
-                    signature.Boolean();
-                    break;
-                case "System.Byte":
-                    signature.Byte();
-                    break;
-                case "System.Char":
-                    signature.Char();
-                    break;
-                case "System.Single":
-                    signature.Single();
-                    break;
-                case "System.Double":
-                    signature.Double();
-                    break;
-                case "System.Int32":
-                    signature.Int32();
-                    break;
-                case "System.UInt32":
-                    signature.UInt32();
-                    break;
-                case "System.IntPtr":
-                    signature.IntPtr();
-                    break;
-                case "System.UIntPtr":
-                    signature.UIntPtr();
-                    break;
-                case "System.Int64":
-                    signature.Int64();
-                    break;
-                case "System.UInt64":
-                    signature.UInt64();
-                    break;
-                case "System.Int16":
-                    signature.Int16();
-                    break;
-                case "System.UInt16":
-                    signature.UInt16();
-                    break;
-                case "System.Object":
-                    signature.Object();
-                    break;
-                case "System.String":
-                    signature.String();
-                    break;
-                default: standardType = false;
-                    break;
+                signature.Boolean();
+            }
+            else if (type == ContextType(typeof(byte), module))
+            {
+                signature.Byte();
+            }
+            else if (type == ContextType(typeof(sbyte), module))
+            {
+                signature.SByte();
+            }
+            else if (type == ContextType(typeof(char), module))
+            {
+                signature.Char();
+            }
+            else if (type == ContextType(typeof(decimal), module))
+            {
+                standardType = false;
+                // Encoder doesn't have native operation for decimal.
+            }
+            else if (type == ContextType(typeof(double), module))
+            {
+                signature.Double();
+            }
+            else if (type == ContextType(typeof(float), module))
+            {
+                signature.Single();
+            }
+            else if (type == ContextType(typeof(int), module))
+            {
+                signature.Int32();
+            }
+            else if (type == ContextType(typeof(uint), module))
+            {
+                signature.UInt32();
+            }
+            else if (type == ContextType(typeof(nint), module))
+            {
+                signature.IntPtr();
+            }
+            else if (type == ContextType(typeof(nuint), module))
+            {
+                signature.UIntPtr();
+            }
+            else if (type == ContextType(typeof(long), module))
+            {
+                signature.Int64();
+            }
+            else if (type == ContextType(typeof(ulong), module))
+            {
+                signature.UInt64();
+            }
+            else if (type == ContextType(typeof(short), module))
+            {
+                signature.Int16();
+            }
+            else if (type == ContextType(typeof(ushort), module))
+            {
+                signature.UInt16();
+            }
+            else
+            {
+                standardType = false;
             }
 
             if (!standardType)
@@ -142,6 +158,25 @@ namespace System.Reflection.Emit.Experimental
                 signature.Type(module.AddorGetTypeReference(type), type.IsValueType);
             }
 
+        }
+
+        internal static Type ContextType(Type type, ModuleBuilder module)
+        {
+            if (module._contextAssembly == null)
+            {
+                Debug.WriteLine($"Unable to locate specified context for {nameof(type)} , reverting to default context");
+                return type;
+            }
+
+            Type? contextType = module._contextAssembly.GetType((type.FullName == null) ? type.Name : type.FullName);
+
+            if (contextType == null)
+            {
+                Debug.WriteLine($"Unable to locate specified context for {nameof(type)} , reverting to default context");
+                return type;
+            }
+
+            return contextType;
         }
     }
 }

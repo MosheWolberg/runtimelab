@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -13,13 +15,23 @@ namespace System.Reflection.Emit.Experimental
         private bool _previouslySaved = false;
         private AssemblyName _assemblyName;
         private ModuleBuilder? _module;
-
-        private AssemblyBuilder(AssemblyName name)
+        private MetadataLoadContext? _metadataLoadContext;
+        private Assembly? _coreAssembly;
+        private AssemblyBuilder(AssemblyName name, MetadataLoadContext? metadataLoadContext)
         {
             _assemblyName = name;
+            _metadataLoadContext = metadataLoadContext;
+            if (metadataLoadContext != null)
+            {
+                _coreAssembly = metadataLoadContext.CoreAssembly;
+                if (_coreAssembly == null)
+                {
+                    throw new ArgumentException("Could not load core assembly");
+                }
+            }
         }
 
-        public static System.Reflection.Emit.Experimental.AssemblyBuilder DefineDynamicAssembly(System.Reflection.AssemblyName name, System.Reflection.Emit.AssemblyBuilderAccess access)
+        public static System.Reflection.Emit.Experimental.AssemblyBuilder DefineDynamicAssembly(System.Reflection.AssemblyName name, System.Reflection.Emit.AssemblyBuilderAccess access, MetadataLoadContext? loadContext = null)
         {
             if (name == null || name.Name == null)
             {
@@ -27,7 +39,7 @@ namespace System.Reflection.Emit.Experimental
             }
 
             // AssemblyBuilderAccess affects runtime management only and is not relevant for saving to disk.
-            AssemblyBuilder currentAssembly = new AssemblyBuilder(name);
+            AssemblyBuilder currentAssembly = new AssemblyBuilder(name, loadContext);
             return currentAssembly;
         }
 
@@ -95,7 +107,7 @@ namespace System.Reflection.Emit.Experimental
                 throw new InvalidOperationException("Multi-module assemblies are not supported");
             }
 
-            ModuleBuilder moduleBuilder = new ModuleBuilder(name, this);
+            ModuleBuilder moduleBuilder = new ModuleBuilder(name, this, _coreAssembly);
             _module = moduleBuilder;
             return moduleBuilder;
         }
