@@ -10,52 +10,20 @@
     </PackageReference>
     <PackageReference Include="System.CodeDom" Version="6.0.0" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="6.0.0" />
-	<Compile Remove="NovelCoreAssembly\**\*.cs" />
   </ItemGroup>
   
   <ItemGroup>
     <ProjectReference Include="..\src\System.Reflection.Emit.Experimental.csproj" />
-    <ProjectReference Include="NovelCoreAssembly\NovelCoreAssembly.csproj" ReferenceOutputAssembly="false" />
+    <PackageReference Include="Netstandard.Library" Version="2.0.3" GeneratePathProperty="true" />
   </ItemGroup>
+
+  <Target Name="CopyNetStandardToOutputDirectory" BeforeTargets="ResolveReferences">
+    <ItemGroup>
+      <None Include="$(PkgNETStandard_Library)/build/netstandard2.0/ref/netstandard.dll" CopyToOutputDirectory="Always" />
+    </ItemGroup>
+  </Target>
 
 	<ItemGroup>
 		<AdditionalFiles Include="stylecop.json" />
 	</ItemGroup>
-
-	<Target Name="CopyNovelCoreAssemblyToOutputDirectory" AfterTargets="ResolveProjectReferences">
-		<!--
-        When building this project from the IDE, just gather the referenced build outputs.
-        The IDE will already have built the project, so there's no need to do it again here.
-        The ContinueOnError setting is here so that, during project load, as
-        much information as possible will be passed to the compilers.
-        -->
-		<MSBuild
-			Projects="@(_MSBuildProjectReferenceExistent)"
-			Targets="GetTargetPath"
-			BuildInParallel="$(BuildInParallel)"
-			Properties="%(_MSBuildProjectReferenceExistent.SetConfiguration); %(_MSBuildProjectReferenceExistent.SetPlatform); %(_MSBuildProjectReferenceExistent.SetTargetFramework)"
-			Condition="'%(_MSBuildProjectReferenceExistent.BuildReference)' == 'true' and '@(ProjectReferenceWithConfiguration)' != '' and ('$(BuildingInsideVisualStudio)' == 'true' or '$(BuildProjectReferences)' != 'true') and '$(VisualStudioVersion)' != '10.0' and '@(_MSBuildProjectReferenceExistent)' != ''"
-			ContinueOnError="!$(BuildingProject)"
-			RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)$(_GlobalPropertiesToRemoveFromProjectReferences)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NovelCoreAssembly" Condition="'%(_MSBuildProjectReferenceExistent.ReferenceOutputAssembly)'=='false'"/>
-		</MSBuild>
-		<!--
-        Build referenced projects when building from the command line.
-        -->
-		<MSBuild
-			Projects="@(_MSBuildProjectReferenceExistent)"
-			Targets="%(_MSBuildProjectReferenceExistent.Targets)"
-			BuildInParallel="$(BuildInParallel)"
-			Properties="%(_MSBuildProjectReferenceExistent.SetConfiguration); %(_MSBuildProjectReferenceExistent.SetPlatform);  %(_MSBuildProjectReferenceExistent.SetTargetFramework)"
-			Condition="'%(_MSBuildProjectReferenceExistent.BuildReference)' == 'true' and '@(ProjectReferenceWithConfiguration)' != '' and '$(BuildingInsideVisualStudio)' != 'true' and '$(BuildProjectReferences)' == 'true' and '@(_MSBuildProjectReferenceExistent)' != ''"
-			ContinueOnError="$(ContinueOnError)"
-			RemoveProperties="%(_MSBuildProjectReferenceExistent.GlobalPropertiesToRemove)$(_GlobalPropertiesToRemoveFromProjectReferences)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NovelCoreAssembly" Condition="'%(_MSBuildProjectReferenceExistent.ReferenceOutputAssembly)'=='false' or '$(DesignTimeBuild)' == 'true'"/>
-		</MSBuild>
-		<ItemGroup>
-			<None Include="@(_NovelCoreAssembly)" CopyToOutputDirectory="Always" />
-		</ItemGroup>
-	</Target>
-
-
 </Project>
