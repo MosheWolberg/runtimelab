@@ -38,6 +38,10 @@ msbuild.wrn
 # Cross directory
 eng/common/cross
 
+# External dependencies
+
+src/Experiment/external
+
 # Visual Studio
 .vs/
 

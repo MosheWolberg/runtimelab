@@ -92,7 +92,7 @@ namespace Experiment.Tests.Basic
             Type[] types = new Type[] { typeof(INoMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null, null);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null);
 
             // Read said assembly back from Disk using MetadataLoadContext
             Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);

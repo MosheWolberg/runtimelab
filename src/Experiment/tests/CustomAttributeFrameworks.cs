@@ -25,11 +25,8 @@ namespace System.Reflection.Emit.Experimental.Tests.CustomCore
             tfc = new TempFileCollection("testDir", false);
             _fileLocation = tfc.AddExtension("dll", _keepFiles);
 
-            // Get the array of runtime assemblies.
-            string[] runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
-
-            // Create the list of assembly paths consisting of runtime assemblies and the inspected assembly.
-            var paths = new List<string>(runtimeAssemblies);
+            // Create the list of assembly paths consisting of the inspected assembly.
+            var paths = new List<string>();
             paths.Add(_newCore);
 
             var resolver = new PathAssemblyResolver(paths);
@@ -49,10 +46,10 @@ namespace System.Reflection.Emit.Experimental.Tests.CustomCore
             Type[] types = new Type[] { typeof(IMultipleMethod), typeof(INoMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, _customAttributes, _context);
+            AssemblyToolsWithContext.WriteAssemblyToDisk(assemblyName, types, _fileLocation, _customAttributes, _context);
 
             // Read said assembly back from Disk using MetadataLoadContext
-            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation, _newCore);
+            Assembly assemblyFromDisk = AssemblyToolsWithContext.TryLoadAssembly(_fileLocation, _newCore);
 
             // Now compare them:
 
@@ -72,23 +69,7 @@ namespace System.Reflection.Emit.Experimental.Tests.CustomCore
 
                 Assert.Equal(sourceType.Name, typeFromDisk.Name);
                 Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
-                Assert.Equal(sourceType.Assembly.FullName, typeFromDisk.Assembly.FullName);
-                Assert.Equal(sourceType.Attributes | TypeAttributes.Import, typeFromDisk.Attributes); // Pseudo-custom attributes are added to core TypeAttributes.
-
-                // Ordering of custom attributes is not preserved in metadata so we sort before comparing.
-                List<CustomAttributeData> attributesFromDisk = typeFromDisk.GetCustomAttributesData().ToList();
-                attributesFromDisk.Sort((x, y) => x.AttributeType.ToString().CompareTo(y.AttributeType.ToString()));
-                _customAttributes.Sort((x, y) => x.Constructor.DeclaringType.ToString().CompareTo(y.Constructor.DeclaringType.ToString()));
-
-                for (int j = 0; j < _customAttributes.Count; j++)
-                {
-                    CustomAttributeBuilder sourceAttribute = _customAttributes[j];
-                    CustomAttributeData attributeFromDisk = attributesFromDisk[j];
-                    Assert.Equal(sourceAttribute.Constructor.DeclaringType.ToString(), attributeFromDisk.AttributeType.ToString());
-                    Assert.Equal(sourceAttribute.Constructor.DeclaringType.Name, attributeFromDisk.AttributeType.Name);
-                    Assert.Equal(sourceAttribute.Constructor.DeclaringType.Namespace, attributeFromDisk.AttributeType.Namespace);
-                    Assert.Equal(sourceAttribute.Constructor.DeclaringType.Assembly.FullName, attributeFromDisk.AttributeType.Assembly.FullName);
-                }
+                Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
 
                 // Method comparison
                 for (int j = 0; j < sourceType.GetMethods().Length; j++)
@@ -98,16 +79,17 @@ namespace System.Reflection.Emit.Experimental.Tests.CustomCore
 
                     Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
                     Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-
-                    Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
-                    Assert.Equal(sourceMethod.ReturnType.Assembly.FullName, methodFromDisk.ReturnType.Assembly.FullName);
+                    Type returnType = _context.CoreAssembly.GetType(sourceMethod.ReturnType.FullName);
+                    Assert.Equal(returnType.FullName, methodFromDisk.ReturnType.FullName);
+                    Assert.Equal(returnType.Assembly.GetName().Name, methodFromDisk.ReturnType.Assembly.GetName().Name);
                     // Parameter comparison
                     for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
                     {
                         ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
                         ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
-                        Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
-                        Assert.Equal(sourceParamter.ParameterType.Assembly.FullName, paramterFromDisk.ParameterType.Assembly.FullName);
+                        Type type = _context.CoreAssembly.GetType(paramterFromDisk.ParameterType.FullName);
+                        Assert.Equal(type.FullName, paramterFromDisk.ParameterType.FullName);
+                        Assert.Equal(type.Assembly.GetName().Name, paramterFromDisk.ParameterType.Assembly.GetName().Name);
                     }
                 }
             }

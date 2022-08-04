@@ -42,7 +42,7 @@ namespace System.Reflection.Emit.Experimental.Tests.Custom
             Type[] types = new Type[] { typeof(IMultipleMethod), typeof(INoMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, _customAttributes, null);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, _customAttributes);
 
             // Read said assembly back from Disk using MetadataLoadContext
             Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
