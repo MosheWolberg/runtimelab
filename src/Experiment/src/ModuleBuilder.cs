@@ -13,6 +13,7 @@ namespace System.Reflection.Emit.Experimental
 {
     public class ModuleBuilder : System.Reflection.Module
     {
+        internal MetadataBuilder Metadata;
         internal Assembly? _contextAssembly;
 
         internal List<AssemblyReferenceWrapper> _assemblyRefStore = new List<AssemblyReferenceWrapper>();
@@ -32,16 +33,13 @@ namespace System.Reflection.Emit.Experimental
             get;
         }
 
-        internal ModuleBuilder(string name, AssemblyBuilder assembly, Assembly? loadContext)
+        internal ModuleBuilder(string name, AssemblyBuilder assembly, Assembly? loadContext, MetadataBuilder metadata)
         {
             ScopeName = name;
             Assembly = assembly;
             _contextAssembly = loadContext;
-        }
+            Metadata = metadata;
 
-        // Wherever possible metadata construction is done in module.
-        internal void AppendMetadata(MetadataBuilder metadata)
-        {
             // Add module metadata
             metadata.AddModule(
                 generation: 0,
@@ -58,32 +56,43 @@ namespace System.Reflection.Emit.Experimental
                 baseType: default(EntityHandle),
                 fieldList: MetadataTokens.FieldDefinitionHandle(1),
                 methodList: MetadataTokens.MethodDefinitionHandle(1));
+        }
 
+        // Wherever possible metadata construction is done in module.
+        internal void AppendMetadata()
+        {
             int fieldTempCounter = 1;
             int methodTempCounter = 1;
+            int paramTempCounter = 1;
             // Add each type definition to metadata table.
             foreach (TypeBuilder typeBuilder in _typeDefStore)
             {
-                TypeDefinitionHandle typeDefintionHandle = MetadataHelper.AddTypeDef(typeBuilder, metadata, methodTempCounter, fieldTempCounter, typeBuilder._baseToken);
+                TypeDefinitionHandle typeDefintionHandle = MetadataHelper.AddTypeDef(typeBuilder, Metadata, methodTempCounter, fieldTempCounter, typeBuilder._baseToken);
 
                 // Add each method definition to metadata table.
                 foreach (MethodBuilder method in typeBuilder._methodDefStore)
                 {
-                    MetadataHelper.AddMethodDefintion(metadata, method, this);
+                    MetadataHelper.AddMethodDefintion(Metadata, method, this, paramTempCounter);
+                    foreach (ParameterBuilder param in method.Parameters)
+                    {
+                        MetadataHelper.AddParamDefintion(Metadata, param, this);
+                        paramTempCounter++;
+                    }
+
                     methodTempCounter++;
                 }
 
                 // Add each field definition to metadata table.
                 foreach (FieldBuilder field in typeBuilder._fieldDefStore)
                 {
-                    MetadataHelper.AddFieldDefinition(metadata, field);
+                    MetadataHelper.AddFieldDefinition(Metadata, field);
                     fieldTempCounter++;
                 }
 
                 // Add each custom attribute to metadata table.
                 foreach (CustomAttributeWrapper customAttribute in typeBuilder._customAttributes)
                 {
-                    metadata.AddCustomAttribute(typeDefintionHandle, customAttribute.ConToken, metadata.GetOrAddBlob(customAttribute.BinaryAttribute));
+                    MetadataHelper.AddCustomAttr(Metadata, customAttribute, typeDefintionHandle);
                 }
             }
 
@@ -92,19 +101,19 @@ namespace System.Reflection.Emit.Experimental
             // Add each assembly reference to metadata table.
             foreach (var assemblyRef in _assemblyRefStore)
             {
-                MetadataHelper.AddAssemblyReference(assemblyRef.Assembly, metadata);
+                MetadataHelper.AddAssemblyReference(assemblyRef.Assembly, Metadata);
             }
 
             // Add each type reference to metadata table.
             foreach (var typeReference in _typeRefStore)
             {
-                MetadataHelper.AddTypeReference(metadata, typeReference.Type, typeReference.ParentToken);
+                MetadataHelper.AddTypeReference(Metadata, typeReference.Type, typeReference.ParentToken);
             }
 
             // Add each method reference to metadata table.
             foreach (var methodRef in _methodRefStore)
             {
-                MetadataHelper.AddConstructorReference(metadata, methodRef.ParentToken, methodRef.Method, this);
+                MetadataHelper.AddConstructorReference(Metadata, methodRef.ParentToken, methodRef.Method, this);
             }
 
         }
@@ -234,7 +243,7 @@ namespace System.Reflection.Emit.Experimental
         public System.Reflection.Emit.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Reflection.Emit.PackingSize packingSize, int typesize)
            => throw new NotImplementedException();
 
-        public System.Reflection.Emit.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Type[]? interfaces)
+        public System.Reflection.Emit.Experimental.TypeBuilder DefineType(string name, System.Reflection.TypeAttributes attr, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent, System.Type[]? interfaces)
             => throw new NotImplementedException();
 
         public System.Reflection.Emit.FieldBuilder DefineUninitializedData(string name, int size, System.Reflection.FieldAttributes attributes)

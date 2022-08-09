@@ -1,4 +1,4 @@
-﻿ // Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit.Experimental.Tests
@@ -19,6 +20,17 @@ namespace System.Reflection.Emit.Experimental.Tests
 
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation, List<CustomAttributeBuilder> customAttributes)
         {
+            /*
+            ConstructorInfo compilationRelax = typeof(CompilationRelaxationsAttribute).GetConstructor(new Type[] { typeof(int) });
+            ConstructorInfo runtimeCompat = typeof(RuntimeCompatibilityAttribute).GetConstructor(new Type[] { });
+            var runtimeProperty = typeof(RuntimeCompatibilityAttribute).GetProperty("WrapNonExceptionThrows");
+
+            CustomAttributeBuilder customAttribute1 = new CustomAttributeBuilder(compilationRelax, new object[] { 8 });
+            CustomAttributeBuilder customAttribute2 = new CustomAttributeBuilder(runtimeCompat, new object[] { }, new PropertyInfo[] { runtimeProperty }, new object[] { true });
+            List<CustomAttributeBuilder> customs = new List<CustomAttributeBuilder>();
+            customs.Add(customAttribute1);
+            customs.Add(customAttribute2);
+            */
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, System.Reflection.Emit.AssemblyBuilderAccess.Run);
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
@@ -46,7 +58,15 @@ namespace System.Reflection.Emit.Experimental.Tests
                 foreach (var method in contextType.GetMethods())
                 {
                     var paramTypes = Array.ConvertAll(method.GetParameters(), item => item.ParameterType);
-                    tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, paramTypes);
+                    MethodBuilder methodBuilder = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, paramTypes);
+
+                    int parameterCount = 0;
+                    foreach (ParameterInfo parameterInfo in method.GetParameters())
+                    {
+                        parameterCount++; // Should this ever be 0?
+                        methodBuilder.DefineParameter(parameterCount, parameterInfo.Attributes, parameterInfo.Name);
+                        // Add in parameter default value when we do method bodies.
+                    }
                 }
 
                 foreach (var field in contextType.GetFields(

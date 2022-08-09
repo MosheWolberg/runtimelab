@@ -13,7 +13,8 @@ namespace System.Reflection.Emit.Experimental.Tests.CustomCore
     // Currently hard-coding in Custom Attributes using the CustomAttributeBuilder.
     public class CustomAttributeFrameWorkTest : IDisposable
     {
-        private readonly string _newCore = Path.Combine(Directory.GetCurrentDirectory(), "netstandard.dll");
+        // private readonly string _newCore = Path.Combine(Directory.GetCurrentDirectory(), "netstandard.dll");
+        private readonly string _newCore = "C:\\Program Files\\dotnet\\packs\\Microsoft.NETCore.App.Ref\\6.0.7\\ref\\net6.0\\System.Runtime.dll";
         private List<CustomAttributeBuilder> _customAttributes = new List<CustomAttributeBuilder>();
         private string _fileLocation;
         private MetadataLoadContext _context;
@@ -30,7 +31,7 @@ namespace System.Reflection.Emit.Experimental.Tests.CustomCore
             paths.Add(_newCore);
 
             var resolver = new PathAssemblyResolver(paths);
-            _context = new MetadataLoadContext(resolver, "netstandard");
+            _context = new MetadataLoadContext(resolver, "System.Runtime");
           }
 
         // Add three custom attributes to two types. One is pseudo custom attribute.
@@ -43,7 +44,7 @@ namespace System.Reflection.Emit.Experimental.Tests.CustomCore
             assemblyName.Version = new Version("7.0");
 
             // Construct its types via reflection.
-            Type[] types = new Type[] { typeof(IMultipleMethod), typeof(INoMethod) };
+            Type[] types = new Type[] { typeof(INoMethod) };
 
             // Generate DLL from these and save it to Disk.
             AssemblyToolsWithContext.WriteAssemblyToDisk(assemblyName, types, _fileLocation, _customAttributes, _context);
@@ -100,18 +101,8 @@ namespace System.Reflection.Emit.Experimental.Tests.CustomCore
         }
     }
 
-    public struct INoMethod
+    public interface INoMethod
     {
-        public int I;
-        private struct Bye
-        {
-        }
-
-        public int Getter()
-        {
-            I = 5;
-            return I;
-        }
     }
 
     public interface IMultipleMethod

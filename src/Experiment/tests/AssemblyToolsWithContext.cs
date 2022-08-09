@@ -6,20 +6,28 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit.Experimental.Tests
 {
     internal class AssemblyToolsWithContext
     {
-        internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation)
-        {
-            WriteAssemblyToDisk(assemblyName, types, fileLocation, null, null);
-        }
-
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation, List<CustomAttributeBuilder> customAttributes, MetadataLoadContext context)
         {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, System.Reflection.Emit.AssemblyBuilderAccess.Run, context);
+            // Required attributes
+            ConstructorInfo compilationRelax = ContextType(typeof(CompilationRelaxationsAttribute)).GetConstructor(new Type[] { ContextType(typeof(int)) });
+            ConstructorInfo runtimeCompat = ContextType(typeof(RuntimeCompatibilityAttribute)).GetConstructor(new Type[] { });
+            var runtimeProperty = ContextType(typeof(RuntimeCompatibilityAttribute)).GetProperty("WrapNonExceptionThrows");
+
+            CustomAttributeBuilder customAttribute1 = new CustomAttributeBuilder(compilationRelax, new object[] { 8 }, context);
+            CustomAttributeBuilder customAttribute2 = new CustomAttributeBuilder(runtimeCompat, new object[] { }, new PropertyInfo[] { runtimeProperty }, new object[] { true }, context);
+            List<CustomAttributeBuilder> customs = new List<CustomAttributeBuilder>();
+            customs.Add(customAttribute1);
+            customs.Add(customAttribute2);
+
+            // End of required attributes
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, System.Reflection.Emit.AssemblyBuilderAccess.Run, customs, context);
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
@@ -46,7 +54,15 @@ namespace System.Reflection.Emit.Experimental.Tests
                 foreach (var method in contextType.GetMethods())
                 {
                     var paramTypes = Array.ConvertAll(method.GetParameters(), item => ContextType(item.ParameterType));
-                    tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, ContextType(method.ReturnType), paramTypes);
+                    MethodBuilder methodBuilder = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, ContextType(method.ReturnType), paramTypes);
+
+                    int parameterCount = 0;
+                    foreach (ParameterInfo parameterInfo in method.GetParameters())
+                    {
+                        parameterCount++; // Should this ever be 0?
+                        methodBuilder.DefineParameter(parameterCount, parameterInfo.Attributes, parameterInfo.Name);
+                        // Add in parameter default value when we do method bodies.
+                    }
                 }
 
                 foreach (var field in contextType.GetFields(
@@ -72,7 +88,7 @@ namespace System.Reflection.Emit.Experimental.Tests
 
                 if (contextAssembly == null)
                 {
-                    Debug.WriteLine($"Unable to locate specified context for {nameof(type)} , reverting to default context");
+                    Debug.WriteLine($"Unable to locate specified assembly for {nameof(type)} , reverting to default context");
                     return type;
                 }
 

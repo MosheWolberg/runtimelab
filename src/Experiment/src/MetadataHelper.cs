@@ -3,6 +3,7 @@
 
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using static System.Reflection.Emit.Experimental.EntityWrappers;
 
 namespace System.Reflection.Emit.Experimental
 {
@@ -66,15 +67,28 @@ namespace System.Reflection.Emit.Experimental
                 metadata.GetOrAddBlob(blob));
         }
 
-        internal static MethodDefinitionHandle AddMethodDefintion(MetadataBuilder metadata, MethodBuilder methodBuilder, ModuleBuilder module)
+        internal static MethodDefinitionHandle AddMethodDefintion(MetadataBuilder metadata, MethodBuilder methodBuilder, ModuleBuilder module, int paramToken)
         {
             return metadata.AddMethodDefinition(
                 methodBuilder.Attributes,
                 MethodImplAttributes.IL,
                 metadata.GetOrAddString(methodBuilder.Name),
-                metadata.GetOrAddBlob(SignatureHelper.MethodSignatureEncoder(methodBuilder._parameters, methodBuilder._returnType, !methodBuilder.IsStatic, module)),
+                metadata.GetOrAddBlob(SignatureHelper.MethodSignatureEncoder(methodBuilder._parameterTypes, methodBuilder._returnType, !methodBuilder.IsStatic, module)),
                 -1,
-                parameterList: default);
+                parameterList: MetadataTokens.ParameterHandle(paramToken));
+        }
+
+        internal static ParameterHandle AddParamDefintion(MetadataBuilder metadata, ParameterBuilder paramBuilder, ModuleBuilder module)
+        {
+            return metadata.AddParameter(
+                paramBuilder.Attributes,
+                (paramBuilder.Name == null) ? default : metadata.GetOrAddString(paramBuilder.Name),
+                paramBuilder.Position);
+        }
+
+        internal static CustomAttributeHandle AddCustomAttr(MetadataBuilder metadata, CustomAttributeWrapper customAttribute, EntityHandle parent)
+        {
+           return metadata.AddCustomAttribute(parent, customAttribute.ConToken, metadata.GetOrAddBlob(customAttribute.BinaryAttribute));
         }
 
         internal static FieldDefinitionHandle AddFieldDefinition(MetadataBuilder metadata, FieldBuilder fieldBuilder)

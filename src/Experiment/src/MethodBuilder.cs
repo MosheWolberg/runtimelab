@@ -1,5 +1,7 @@
-﻿ // Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
 
 namespace System.Reflection.Emit.Experimental
 {
@@ -10,26 +12,54 @@ namespace System.Reflection.Emit.Experimental
         public override System.Reflection.CallingConventions CallingConvention { get; }
         public override TypeBuilder DeclaringType { get; }
         public override System.Reflection.Module Module { get; }
+
         internal Type? _returnType;
 #pragma warning disable SA1011 // Closing square brackets should be spaced correctly
-        internal Type[]? _parameters;
+        internal Type[]? _parameterTypes;
+        internal List<ParameterBuilder> Parameters = new List<ParameterBuilder>();
 #pragma warning restore SA1011 // Closing square brackets should be spaced correctly
 
         internal MethodBuilder(string name, System.Reflection.MethodAttributes attributes, CallingConventions callingConventions, Type? returnType, Type[]? parameters, TypeBuilder declaringType)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            if (name[0] == '\0')
+            {
+                throw new ArgumentException("Illegal name: " + nameof(name));
+            }
+
+            if (parameters != null)
+            {
+                foreach (Type t in parameters)
+                {
+                    ArgumentNullException.ThrowIfNull(t, nameof(parameters));
+                }
+            }
+
             Name = name;
             Attributes = attributes;
             CallingConvention = callingConventions;
-            _returnType = returnType;
-            _parameters = parameters;
+            _returnType = returnType ?? typeof(void);
+            _parameterTypes = parameters;
             DeclaringType = declaringType;
             Module = declaringType.Module;
         }
 
-        // These methods seems like they should be implemented next.
-        public System.Reflection.Emit.ParameterBuilder DefineParameter(int position, System.Reflection.ParameterAttributes attributes, string? strParamName)
+        public System.Reflection.Emit.Experimental.ParameterBuilder DefineParameter(int position, System.Reflection.ParameterAttributes attributes, string? strParamName)
         {
-            throw new NotImplementedException();
+            if (position < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position));
+            }
+
+            if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
+            {
+                throw new ArgumentOutOfRangeException((nameof(position)));
+            }
+
+            ParameterBuilder builder = new ParameterBuilder(position, attributes, strParamName);
+            Parameters.Add(builder);
+            return builder;
         }
 
         public void SetImplementationFlags(System.Reflection.MethodImplAttributes attributes)
@@ -119,7 +149,7 @@ namespace System.Reflection.Emit.Experimental
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute)
             => throw new NotImplementedException();
 
-        public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder)
+        public void SetCustomAttribute(System.Reflection.Emit.Experimental.CustomAttributeBuilder customBuilder)
             => throw new NotImplementedException();
 
         public override string ToString()

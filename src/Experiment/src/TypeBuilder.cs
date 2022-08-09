@@ -74,7 +74,7 @@ namespace System.Reflection.Emit.Experimental
 
             if (binaryAttribute == null)
             {
-                throw new ArgumentNullException(nameof(binaryAttribute)); // This is incorrect
+                throw new ArgumentNullException(nameof(binaryAttribute));
             }
 
             if (constructorInfo.DeclaringType == null)
@@ -175,7 +175,7 @@ namespace System.Reflection.Emit.Experimental
         public System.Reflection.Emit.MethodBuilder DefineMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? returnTypeRequiredCustomModifiers, System.Type[]? returnTypeOptionalCustomModifiers, System.Type[]? parameterTypes, System.Type[][]? parameterTypeRequiredCustomModifiers, System.Type[][]? parameterTypeOptionalCustomModifiers)
             => throw new NotImplementedException();
 
-        public System.Reflection.Emit.MethodBuilder DefineMethod(string name, System.Reflection.MethodAttributes attributes, System.Type? returnType, System.Type[]? parameterTypes)
+        public System.Reflection.Emit.Experimental.MethodBuilder DefineMethod(string name, System.Reflection.MethodAttributes attributes, System.Type? returnType, System.Type[]? parameterTypes)
             => throw new NotImplementedException();
 
         public void DefineMethodOverride(System.Reflection.MethodInfo methodInfoBody, System.Reflection.MethodInfo methodInfoDeclaration)
