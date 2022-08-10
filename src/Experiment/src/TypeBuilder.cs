@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Xml.Linq;
 using static System.Reflection.Emit.Experimental.EntityWrappers;
 
 namespace System.Reflection.Emit.Experimental
@@ -18,6 +20,7 @@ namespace System.Reflection.Emit.Experimental
         public override string? Namespace { get; }
         internal TypeAttributes UserTypeAttribute { get; set; }
         internal List<MethodBuilder> _methodDefStore = new List<MethodBuilder>();
+        internal List<ConstructorBuilder> _constructorDefStore = new List<ConstructorBuilder>();
         internal List<FieldBuilder> _fieldDefStore = new List<FieldBuilder>();
         internal List<CustomAttributeWrapper> _customAttributes = new ();
         internal EntityHandle _selfToken;
@@ -55,7 +58,6 @@ namespace System.Reflection.Emit.Experimental
         {
             MethodBuilder methodBuilder = new (name, attributes, callingConvention, returnType, parameterTypes, this);
             _methodDefStore.Add(methodBuilder);
-            Module._methodDefCount++;
             return methodBuilder;
         }
 
@@ -147,17 +149,20 @@ namespace System.Reflection.Emit.Experimental
 
         public System.Reflection.Emit.ConstructorBuilder DefineConstructor(System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type[]? parameterTypes, System.Type[][]? requiredCustomModifiers, System.Type[][]? optionalCustomModifiers) => throw new NotImplementedException();
 
-        public System.Reflection.Emit.ConstructorBuilder DefineDefaultConstructor(System.Reflection.MethodAttributes attributes)
-            => throw new NotImplementedException();
+        public System.Reflection.Emit.Experimental.ConstructorBuilder DefineDefaultConstructor(System.Reflection.MethodAttributes attributes)
+        {
+            ConstructorBuilder constructorBuilder = new ConstructorBuilder(".ctor", attributes, CallingConventions.Standard, null, this);
+            _constructorDefStore.Add(constructorBuilder);
+            return constructorBuilder;
+        }
 
         public System.Reflection.Emit.EventBuilder DefineEvent(string name, System.Reflection.EventAttributes attributes, System.Type eventtype)
             => throw new NotImplementedException();
 
         public System.Reflection.Emit.Experimental.FieldBuilder DefineField(string fieldName, System.Type type, System.Reflection.FieldAttributes attributes)
         {
-            FieldBuilder fieldBuilder = new FieldBuilder(this, fieldName, type, null, attributes, MetadataTokens.EntityHandle(Module._fieldDefCount + 1));
+            FieldBuilder fieldBuilder = new FieldBuilder(this, fieldName, type, null, attributes);
             _fieldDefStore.Add(fieldBuilder);
-            Module._fieldDefCount++;
             return fieldBuilder;
         }
 

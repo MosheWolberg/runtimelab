@@ -65,6 +65,11 @@ namespace System.Reflection.Emit.Experimental.Tests
                     }
                 }
 
+                foreach (var constructor in contextType.GetConstructors())
+                {
+                    MethodBuilder methodBuilder = tb.DefineMethod(constructor.Name, constructor.Attributes, constructor.CallingConvention, null, null);
+                }
+
                 foreach (var field in contextType.GetFields(
                     BindingFlags.Instance |
                     BindingFlags.Static |

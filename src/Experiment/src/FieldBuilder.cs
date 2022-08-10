@@ -19,12 +19,10 @@ namespace System.Reflection.Emit.Experimental
         private BlobBuilder _fieldSignature;
         #endregion
 
-        internal EntityHandle _fieldTok;
-
         #region Constructor
         internal FieldBuilder(TypeBuilder typeBuilder, string fieldName, Type type,
 #pragma warning disable SA1011 // Closing square brackets should be spaced correctly
-            Type[]? requiredCustomModifiers, FieldAttributes attributes, EntityHandle fieldTok)
+            Type[]? requiredCustomModifiers, FieldAttributes attributes)
 #pragma warning restore SA1011 // Closing square brackets should be spaced correctly
         {
             ArgumentException.ThrowIfNullOrEmpty(fieldName);
@@ -47,7 +45,6 @@ namespace System.Reflection.Emit.Experimental
             _fieldType = type;
             _attributes = attributes & ~FieldAttributes.ReservedMask;
             _fieldSignature = SignatureHelper.FieldSignatureEncoder(FieldType, _moduleBuilder);
-            _fieldTok = fieldTok;
         }
 
         public BlobBuilder FieldSignature

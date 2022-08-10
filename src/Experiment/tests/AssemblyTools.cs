@@ -20,7 +20,6 @@ namespace System.Reflection.Emit.Experimental.Tests
 
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation, List<CustomAttributeBuilder> customAttributes)
         {
-            /*
             ConstructorInfo compilationRelax = typeof(CompilationRelaxationsAttribute).GetConstructor(new Type[] { typeof(int) });
             ConstructorInfo runtimeCompat = typeof(RuntimeCompatibilityAttribute).GetConstructor(new Type[] { });
             var runtimeProperty = typeof(RuntimeCompatibilityAttribute).GetProperty("WrapNonExceptionThrows");
@@ -30,8 +29,7 @@ namespace System.Reflection.Emit.Experimental.Tests
             List<CustomAttributeBuilder> customs = new List<CustomAttributeBuilder>();
             customs.Add(customAttribute1);
             customs.Add(customAttribute2);
-            */
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, System.Reflection.Emit.AssemblyBuilderAccess.Run);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, System.Reflection.Emit.AssemblyBuilderAccess.Run, customs);
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
@@ -67,6 +65,11 @@ namespace System.Reflection.Emit.Experimental.Tests
                         methodBuilder.DefineParameter(parameterCount, parameterInfo.Attributes, parameterInfo.Name);
                         // Add in parameter default value when we do method bodies.
                     }
+                }
+
+                foreach (var constructor in contextType.GetConstructors())
+                {
+                    tb.DefineDefaultConstructor(constructor.Attributes);
                 }
 
                 foreach (var field in contextType.GetFields(

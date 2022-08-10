@@ -58,7 +58,7 @@ namespace System.Reflection.Emit.Experimental
                 metadata.GetOrAddString(name));
         }
 
-        internal static MemberReferenceHandle AddConstructorReference(MetadataBuilder metadata, EntityHandle parent, MethodBase method, ModuleBuilder module)
+        internal static MemberReferenceHandle AddMethodReference(MetadataBuilder metadata, EntityHandle parent, MethodBase method, ModuleBuilder module)
         {
             var blob = SignatureHelper.MethodSignatureEncoder(method.GetParameters(), null, true, module);
             return metadata.AddMemberReference(
@@ -76,6 +76,17 @@ namespace System.Reflection.Emit.Experimental
                 metadata.GetOrAddBlob(SignatureHelper.MethodSignatureEncoder(methodBuilder._parameterTypes, methodBuilder._returnType, !methodBuilder.IsStatic, module)),
                 -1,
                 parameterList: MetadataTokens.ParameterHandle(paramToken));
+        }
+
+        internal static MethodDefinitionHandle AddConstructorDefintion(MetadataBuilder metadata, ConstructorBuilder methodBuilder, ModuleBuilder module, int offest)
+        {
+            return metadata.AddMethodDefinition(
+                methodBuilder.Attributes,
+                MethodImplAttributes.IL,
+                metadata.GetOrAddString(methodBuilder.Name),
+                default,
+                bodyOffset: offest,
+                parameterList: default);
         }
 
         internal static ParameterHandle AddParamDefintion(MetadataBuilder metadata, ParameterBuilder paramBuilder, ModuleBuilder module)

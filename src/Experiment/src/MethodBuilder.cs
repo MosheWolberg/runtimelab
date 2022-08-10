@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection.Metadata;
+using static System.Reflection.Emit.Experimental.EntityWrappers;
 
 namespace System.Reflection.Emit.Experimental
 {
@@ -11,8 +14,8 @@ namespace System.Reflection.Emit.Experimental
         public override System.Reflection.MethodAttributes Attributes { get; }
         public override System.Reflection.CallingConventions CallingConvention { get; }
         public override TypeBuilder DeclaringType { get; }
-        public override System.Reflection.Module Module { get; }
-
+        public override System.Reflection.Emit.Experimental.ModuleBuilder Module { get; }
+        internal List<CustomAttributeWrapper> _customAttributes = new ();
         internal Type? _returnType;
 #pragma warning disable SA1011 // Closing square brackets should be spaced correctly
         internal Type[]? _parameterTypes;
@@ -146,11 +149,45 @@ namespace System.Reflection.Emit.Experimental
         public override System.Reflection.MethodInfo MakeGenericMethod(params System.Type[] typeArguments)
             => throw new NotImplementedException();
 
-        public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute)
-            => throw new NotImplementedException();
+        public void SetCustomAttribute(System.Reflection.ConstructorInfo constructorInfo, byte[] binaryAttribute)
+        {
+            if (constructorInfo == null)
+            {
+                throw new ArgumentNullException(nameof(constructorInfo));
+            }
+
+            if (binaryAttribute == null)
+            {
+                throw new ArgumentNullException(nameof(binaryAttribute));
+            }
+
+            if (constructorInfo.DeclaringType == null)
+            {
+                throw new ArgumentException("Attribute constructor has no type.");
+            }
+
+            // We check whether the custom attribute is actually a pseudo-custom attribute.
+            // (We have only done ComImport for the prototype, eventually all pseudo-custom attributes will be hard-coded.)
+            // If it is, simply alter the TypeAttributes.
+            // We want to handle this before the type metadata is generated.
+            if (constructorInfo.DeclaringType.Name.Equals("ComImportAttribute"))
+            {
+                Debug.WriteLine("Modifying internal flags");
+
+            }
+            else
+            {
+                CustomAttributeWrapper customAttribute = new CustomAttributeWrapper(constructorInfo, binaryAttribute);
+                EntityHandle constructorHandle = Module.AddorGetMethodReference(constructorInfo);
+                customAttribute.ConToken = constructorHandle;
+                _customAttributes.Add(customAttribute);
+            }
+        }
 
         public void SetCustomAttribute(System.Reflection.Emit.Experimental.CustomAttributeBuilder customBuilder)
-            => throw new NotImplementedException();
+        {
+            SetCustomAttribute(customBuilder.Constructor, customBuilder._blob);
+        }
 
         public override string ToString()
             => throw new NotImplementedException();

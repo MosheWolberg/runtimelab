@@ -13,8 +13,7 @@ namespace System.Reflection.Emit.Experimental.Tests.CustomCore
     // Currently hard-coding in Custom Attributes using the CustomAttributeBuilder.
     public class CustomAttributeFrameWorkTest : IDisposable
     {
-        // private readonly string _newCore = Path.Combine(Directory.GetCurrentDirectory(), "netstandard.dll");
-        private readonly string _newCore = "C:\\Program Files\\dotnet\\packs\\Microsoft.NETCore.App.Ref\\6.0.7\\ref\\net6.0\\System.Runtime.dll";
+        private readonly string _newCore = Path.Combine(Directory.GetCurrentDirectory(), "netstandard.dll");
         private List<CustomAttributeBuilder> _customAttributes = new List<CustomAttributeBuilder>();
         private string _fileLocation;
         private MetadataLoadContext _context;
@@ -31,7 +30,7 @@ namespace System.Reflection.Emit.Experimental.Tests.CustomCore
             paths.Add(_newCore);
 
             var resolver = new PathAssemblyResolver(paths);
-            _context = new MetadataLoadContext(resolver, "System.Runtime");
+            _context = new MetadataLoadContext(resolver, "netstandard");
           }
 
         // Add three custom attributes to two types. One is pseudo custom attribute.

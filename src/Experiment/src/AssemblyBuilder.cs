@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Security.Cryptography.X509Certificates;
 using static System.Reflection.Emit.Experimental.EntityWrappers;
 
 namespace System.Reflection.Emit.Experimental
@@ -21,6 +22,7 @@ namespace System.Reflection.Emit.Experimental
         private Assembly? _coreAssembly;
         internal List<CustomAttributeWrapper> AssemblyAttributes = new List<CustomAttributeWrapper>();
         internal MetadataBuilder Metadata = new MetadataBuilder();
+        internal BlobBuilder _ilBuilder = new BlobBuilder();
         private AssemblyBuilder(AssemblyName name, MetadataLoadContext? metadataLoadContext, System.Collections.Generic.IEnumerable<System.Reflection.Emit.Experimental.CustomAttributeBuilder>? assemblyAttributes)
         {
             _assemblyName = name;
@@ -80,7 +82,7 @@ namespace System.Reflection.Emit.Experimental
                 throw new ArgumentNullException(nameof(name));
             }
 
-            return DefineDynamicAssembly(name, access, loadContext);
+            return DefineDynamicAssembly(name, access, null, loadContext);
         }
 
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
@@ -113,10 +115,18 @@ namespace System.Reflection.Emit.Experimental
                 throw new ArgumentException(nameof(_assemblyName));
             }
 
-            if (_module == null)
+            if (_module == null || _module.ScopeName == null)
             {
                 throw new InvalidOperationException("Assembly needs at least one module defined");
             }
+
+            // Add module metadata
+            Metadata.AddModule(
+            generation: 0,
+            Metadata.GetOrAddString(_module.ScopeName),
+            Metadata.GetOrAddGuid(Guid.NewGuid()),
+            default(GuidHandle),
+            default(GuidHandle));
 
             // Add assembly metadata
             var assemblyHandle = Metadata.AddAssembly( // Metadata is added for the new assembly - Current design - metadata generated only when Save method is called.
@@ -125,7 +135,7 @@ namespace System.Reflection.Emit.Experimental
                culture: (_assemblyName.CultureName == null) ? default : Metadata.GetOrAddString(value: _assemblyName.CultureName),
                publicKey: (_assemblyName.GetPublicKey() is byte[] publicKey) ? Metadata.GetOrAddBlob(value: publicKey) : default,
                flags: (AssemblyFlags)_assemblyName.Flags,
-               hashAlgorithm: AssemblyHashAlgorithm.None); // AssemblyName.HashAlgorithm is obsolete so default value used.
+               hashAlgorithm: AssemblyHashAlgorithm.Sha256); // AssemblyName.HashAlgorithm is obsolete so default value used.
 
             foreach (CustomAttributeWrapper customAttribute in AssemblyAttributes)
             {
@@ -138,8 +148,7 @@ namespace System.Reflection.Emit.Experimental
             _module.AppendMetadata();
 
             using var peStream = new FileStream(assemblyFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
-            var ilBuilder = new BlobBuilder();
-            WritePEImage(peStream, Metadata, ilBuilder);
+            WritePEImage(peStream, Metadata, _ilBuilder);
             _previouslySaved = true;
         }
 
@@ -160,7 +169,7 @@ namespace System.Reflection.Emit.Experimental
                 throw new InvalidOperationException("Multi-module assemblies are not supported");
             }
 
-            ModuleBuilder moduleBuilder = new ModuleBuilder(name, this, _coreAssembly, Metadata);
+            ModuleBuilder moduleBuilder = new ModuleBuilder(name, this, _ilBuilder, _coreAssembly, Metadata);
             _module = moduleBuilder;
             return moduleBuilder;
         }
@@ -193,12 +202,13 @@ namespace System.Reflection.Emit.Experimental
         {
             // Create executable with the managed metadata from the specified MetadataBuilder.
             var peHeaderBuilder = new PEHeaderBuilder(
-                imageCharacteristics: Characteristics.Dll);
+                imageCharacteristics: Characteristics.ExecutableImage | Characteristics.Dll);
 
             var peBuilder = new ManagedPEBuilder(
                 peHeaderBuilder,
                 new MetadataRootBuilder(metadataBuilder),
                 ilBuilder,
+                entryPoint: default,
                 flags: CorFlags.ILOnly,
                 deterministicIdProvider: content => new BlobContentId(Guid.NewGuid(), 0x04030201));
 

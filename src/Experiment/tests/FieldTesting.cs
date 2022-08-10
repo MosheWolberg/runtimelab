@@ -3,9 +3,9 @@
 
 using System;
 using System.CodeDom.Compiler;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
 using System.Reflection.Emit.Experimental.Tests;
@@ -27,6 +27,72 @@ namespace Experiment.Tests.Fields
 
         public void Dispose()
         {
+        }
+
+        [Fact]
+        public void ConstructorGenerator()
+        {
+            // Construct an assembly name.
+            AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
+
+            // Construct its types via reflection.
+            Type[] types = new Type[] { typeof(INoMethod2) };
+
+            // Generate DLL from these and save it to Disk.
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null);
+
+            // Read said assembly back from Disk using MetadataLoadContext
+            Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
+
+            // Now compare them:
+
+            // AssemblyName
+            Assert.NotNull(assemblyFromDisk);
+            Assert.Equal(assemblyName.Name, assemblyFromDisk.GetName().Name);
+
+            // Module Name
+            Module moduleFromDisk = assemblyFromDisk.Modules.First();
+            Assert.Equal(assemblyName.Name, moduleFromDisk.ScopeName);
+
+            // Type comparisons
+            for (int i = 0; i < types.Length; i++)
+            {
+                Type sourceType = types[i];
+                Type typeFromDisk = moduleFromDisk.GetTypes()[i];
+
+                Assert.Equal(sourceType.Name, typeFromDisk.Name);
+                Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
+                Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
+
+                // Method comparison
+                for (int j = 0; j < sourceType.GetMethods().Length; j++)
+                {
+                    MethodInfo sourceMethod = sourceType.GetMethods()[j];
+                    MethodInfo methodFromDisk = typeFromDisk.GetMethods()[j];
+
+                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                    Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+                    // Parameter comparison
+                    for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
+                    {
+                        ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
+                        ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
+                        Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
+                    }
+                }
+
+                // Field Comparison
+                for (int j = 0; j < sourceType.GetFields().Length; j++)
+                {
+                    FieldInfo sourceField = sourceType.GetFields()[j];
+                    FieldInfo fieldFromDisk = typeFromDisk.GetFields()[j];
+
+                    Assert.Equal(sourceField.Name, fieldFromDisk.Name);
+                    Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
+                    Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
+                }
+            }
         }
 
         [Fact]
@@ -466,14 +532,29 @@ namespace Experiment.Tests.Fields
                 // Method comparison
                 for (int j = 0; j < sourceType.GetMethods().Length; j++)
                 {
-                    MethodInfo[] sourceMethods = sourceType.GetMethods();
-                    MethodInfo[] methodsFromDisk = typeFromDisk.GetMethods();
                     MethodInfo sourceMethod = sourceType.GetMethods()[j];
                     MethodInfo methodFromDisk = typeFromDisk.GetMethods()[j];
 
                     Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
                     Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
                     Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+                    // Parameter comparison
+                    for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
+                    {
+                        ParameterInfo sourceParamter = sourceMethod.GetParameters()[k];
+                        ParameterInfo paramterFromDisk = methodFromDisk.GetParameters()[k];
+                        Assert.Equal(sourceParamter.ParameterType.FullName, paramterFromDisk.ParameterType.FullName);
+                    }
+                }
+
+                // Constructor comparison
+                for (int j = 0; j < sourceType.GetConstructors().Length; j++)
+                {
+                    ConstructorInfo sourceMethod = sourceType.GetConstructors()[j];
+                    ConstructorInfo methodFromDisk = typeFromDisk.GetConstructors()[j];
+
+                    Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                    Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
                     // Parameter comparison
                     for (int k = 0; k < sourceMethod.GetParameters().Length; k++)
                     {
@@ -514,22 +595,22 @@ namespace Experiment.Tests.Fields
 
     public class INoMethod2
     {
-        private string _j;
         internal int[] _numbers = new int[5];
-        public string Getter()
+        public INoMethod2()
         {
-            _j = "hello";
-            return _j;
         }
-
     }
 
-    public interface IMultipleMethod
+    public class IMultipleMethod
     {
-        string[] Func(int a, string b);
-        bool MoreFunc(int[] a, string b, bool c);
-        System.IO.BinaryWriter DoIExist();
-        void BuildAPerpetualMotionMachine();
+        public bool MoreFunc(int[] a, string b, bool c)
+        {
+            return true;
+        }
+
+        private void BuildAPerpetualMotionMachine()
+        {
+        }
     }
 
     internal interface IAccess

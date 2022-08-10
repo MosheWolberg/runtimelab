@@ -15,7 +15,7 @@ namespace System.Reflection.Emit.Experimental
     {
         internal MetadataBuilder Metadata;
         internal Assembly? _contextAssembly;
-
+        internal BlobBuilder _ilBuilder;
         internal List<AssemblyReferenceWrapper> _assemblyRefStore = new List<AssemblyReferenceWrapper>();
 
         internal List<TypeReferenceWrapper> _typeRefStore = new List<TypeReferenceWrapper>();
@@ -23,30 +23,19 @@ namespace System.Reflection.Emit.Experimental
         internal List<MethodReferenceWrapper> _methodRefStore = new List<MethodReferenceWrapper>();
 
         internal List<TypeBuilder> _typeDefStore = new List<TypeBuilder>();
-
-        internal int _methodDefCount = 0;
-        internal int _fieldDefCount = 0;
-
         public override System.Reflection.Assembly Assembly { get; }
         public override string ScopeName
         {
             get;
         }
 
-        internal ModuleBuilder(string name, AssemblyBuilder assembly, Assembly? loadContext, MetadataBuilder metadata)
+        internal ModuleBuilder(string name, AssemblyBuilder assembly, BlobBuilder ilBuilder, Assembly? loadContext, MetadataBuilder metadata)
         {
             ScopeName = name;
             Assembly = assembly;
             _contextAssembly = loadContext;
             Metadata = metadata;
-
-            // Add module metadata
-            metadata.AddModule(
-                generation: 0,
-                metadata.GetOrAddString(ScopeName),
-                metadata.GetOrAddGuid(Guid.NewGuid()),
-                default(GuidHandle),
-                default(GuidHandle));
+            _ilBuilder = ilBuilder;
 
             // Create type definition for the special <Module> type that holds global functions
             metadata.AddTypeDefinition(
@@ -72,13 +61,48 @@ namespace System.Reflection.Emit.Experimental
                 // Add each method definition to metadata table.
                 foreach (MethodBuilder method in typeBuilder._methodDefStore)
                 {
-                    MetadataHelper.AddMethodDefintion(Metadata, method, this, paramTempCounter);
+                    EntityHandle methodHandle = MetadataHelper.AddMethodDefintion(Metadata, method, this, paramTempCounter);
+
                     foreach (ParameterBuilder param in method.Parameters)
                     {
                         MetadataHelper.AddParamDefintion(Metadata, param, this);
                         paramTempCounter++;
                     }
 
+                    methodTempCounter++;
+                }
+
+                // Get System.Object() constructor
+                MethodBase? ctor = typeof(object).GetConstructor(Type.EmptyTypes);
+                if (ctor == null)
+                {
+                    throw new Exception("Unable to locate Sytem.Object constructor");
+                }
+
+                EntityHandle ctorHandle = AddorGetMethodReference(ctor);
+
+                // Set up IL Blobs
+                var methodBodyStream = new MethodBodyStreamEncoder(_ilBuilder);
+                var codeBuilder = new BlobBuilder();
+                InstructionEncoder il;
+                // Add each constructor definition to metadata table.
+                foreach (ConstructorBuilder constructor in typeBuilder._constructorDefStore)
+                {
+                    // Emit IL for Program::.ctor
+                    il = new InstructionEncoder(codeBuilder);
+
+                    // ldarg.0
+                    il.LoadArgument(0);
+
+                    // call instance void [mscorlib]System.Object::.ctor()
+                    il.Call(ctorHandle);
+
+                    // ret
+                    il.OpCode(ILOpCode.Ret);
+
+                    int ctorBodyOffset = methodBodyStream.AddMethodBody(il);
+                    codeBuilder.Clear();
+                    MetadataHelper.AddConstructorDefintion(Metadata, constructor, this, ctorBodyOffset);
                     methodTempCounter++;
                 }
 
@@ -113,7 +137,7 @@ namespace System.Reflection.Emit.Experimental
             // Add each method reference to metadata table.
             foreach (var methodRef in _methodRefStore)
             {
-                MetadataHelper.AddConstructorReference(Metadata, methodRef.ParentToken, methodRef.Method, this);
+                MetadataHelper.AddMethodReference(Metadata, methodRef.ParentToken, methodRef.Method, this);
             }
 
         }
