@@ -18,7 +18,7 @@ namespace System.Reflection.Emit.Experimental.Tests
             WriteAssemblyToDisk(assemblyName, types, fileLocation, null);
         }
 
-        internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation, List<CustomAttributeBuilder> customAttributes)
+        internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation, List<CustomAttributeBuilder> customAttributes, bool ignoreMethods = false)
         {
             ConstructorInfo compilationRelax = typeof(CompilationRelaxationsAttribute).GetConstructor(new Type[] { typeof(int) });
             ConstructorInfo runtimeCompat = typeof(RuntimeCompatibilityAttribute).GetConstructor(new Type[] { });
@@ -29,6 +29,7 @@ namespace System.Reflection.Emit.Experimental.Tests
             List<CustomAttributeBuilder> customs = new List<CustomAttributeBuilder>();
             customs.Add(customAttribute1);
             customs.Add(customAttribute2);
+
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, System.Reflection.Emit.AssemblyBuilderAccess.Run, customs);
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
@@ -55,13 +56,18 @@ namespace System.Reflection.Emit.Experimental.Tests
 
                 foreach (var method in contextType.GetMethods())
                 {
+                    if (!type.IsInterface && ignoreMethods)
+                    {
+                        break;
+                    }
+
                     var paramTypes = Array.ConvertAll(method.GetParameters(), item => item.ParameterType);
                     MethodBuilder methodBuilder = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, paramTypes);
 
                     int parameterCount = 0;
                     foreach (ParameterInfo parameterInfo in method.GetParameters())
                     {
-                        parameterCount++; // Should this ever be 0?
+                        parameterCount++;
                         methodBuilder.DefineParameter(parameterCount, parameterInfo.Attributes, parameterInfo.Name);
                         // Add in parameter default value when we do method bodies.
                     }
@@ -69,6 +75,7 @@ namespace System.Reflection.Emit.Experimental.Tests
 
                 foreach (var constructor in contextType.GetConstructors())
                 {
+                    Debug.WriteLine("Consturctor Attributes: " + constructor.Attributes);
                     tb.DefineDefaultConstructor(constructor.Attributes);
                 }
 

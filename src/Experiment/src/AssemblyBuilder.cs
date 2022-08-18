@@ -4,11 +4,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Security.Cryptography.X509Certificates;
 using static System.Reflection.Emit.Experimental.EntityWrappers;
 
 namespace System.Reflection.Emit.Experimental
@@ -135,7 +133,7 @@ namespace System.Reflection.Emit.Experimental
                culture: (_assemblyName.CultureName == null) ? default : Metadata.GetOrAddString(value: _assemblyName.CultureName),
                publicKey: (_assemblyName.GetPublicKey() is byte[] publicKey) ? Metadata.GetOrAddBlob(value: publicKey) : default,
                flags: (AssemblyFlags)_assemblyName.Flags,
-               hashAlgorithm: AssemblyHashAlgorithm.Sha256); // AssemblyName.HashAlgorithm is obsolete so default value used.
+               hashAlgorithm: AssemblyHashAlgorithm.None); // AssemblyName.HashAlgorithm is obsolete so default value used.
 
             foreach (CustomAttributeWrapper customAttribute in AssemblyAttributes)
             {

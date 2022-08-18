@@ -127,8 +127,7 @@ namespace System.Reflection.Emit.Experimental
             => throw new NotImplementedException();
 
         public System.Reflection.Emit.ILGenerator GetILGenerator()
-            => throw new NotImplementedException();
-
+           => throw new NotImplementedException();
         public System.Reflection.Emit.ILGenerator GetILGenerator(int size)
             => throw new NotImplementedException();
 
@@ -190,6 +189,6 @@ namespace System.Reflection.Emit.Experimental
         }
 
         public override string ToString()
-            => throw new NotImplementedException();
+            => Name;
     }
 }

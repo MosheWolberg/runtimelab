@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using static System.Reflection.Emit.Experimental.EntityWrappers;
@@ -60,7 +61,8 @@ namespace System.Reflection.Emit.Experimental
 
         internal static MemberReferenceHandle AddMethodReference(MetadataBuilder metadata, EntityHandle parent, MethodBase method, ModuleBuilder module)
         {
-            var blob = SignatureHelper.MethodSignatureEncoder(method.GetParameters(), null, true, module);
+            Type[] parameters = Array.ConvertAll(method.GetParameters(), p => p.ParameterType);
+            var blob = SignatureHelper.MethodSignatureEncoder(parameters, null, !method.IsStatic, module);
             return metadata.AddMemberReference(
                 parent,
                 metadata.GetOrAddString(method.Name),
@@ -80,13 +82,14 @@ namespace System.Reflection.Emit.Experimental
 
         internal static MethodDefinitionHandle AddConstructorDefintion(MetadataBuilder metadata, ConstructorBuilder methodBuilder, ModuleBuilder module, int offest)
         {
+            Debug.WriteLine("Discovered attributes" + methodBuilder.Attributes);
             return metadata.AddMethodDefinition(
                 methodBuilder.Attributes,
                 MethodImplAttributes.IL,
                 metadata.GetOrAddString(methodBuilder.Name),
-                default,
+                metadata.GetOrAddBlob(SignatureHelper.MethodSignatureEncoder(null, null, !methodBuilder.IsStatic, module)),
                 bodyOffset: offest,
-                parameterList: default);
+                parameterList: MetadataTokens.ParameterHandle(1));
         }
 
         internal static ParameterHandle AddParamDefintion(MetadataBuilder metadata, ParameterBuilder paramBuilder, ModuleBuilder module)

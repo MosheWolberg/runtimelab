@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -20,28 +19,18 @@ namespace System.Reflection.Emit.Experimental
             return fieldSignature;
         }
 
-        internal static BlobBuilder MethodSignatureEncoder(ParameterInfo[]? parameters, ParameterInfo? returnType, bool isInstance, ModuleBuilder moduleBuilder)
-        {
-            Type[]? typeParameters = null;
-            Type? typeReturn = null;
-
-            if (parameters != null)
-            {
-                typeParameters = Array.ConvertAll(parameters, parameter => parameter.ParameterType);
-            }
-
-            if (returnType != null)
-            {
-                typeReturn = returnType.ParameterType;
-            }
-
-            return MethodSignatureEncoder(typeParameters, typeReturn, isInstance, moduleBuilder);
-        }
-
         internal static BlobBuilder MethodSignatureEncoder(Type[]? parameters, Type? returnType, bool isInstance, ModuleBuilder moduleBuilder)
         {
             // Encoding return type and parameters.
             var methodSignature = new BlobBuilder();
+
+            if (parameters == null && returnType == null)
+            {
+                new BlobEncoder(methodSignature).
+                MethodSignature(isInstanceMethod: true).
+                Parameters(0, returnType => returnType.Void(), parameters => { });
+                return methodSignature;
+            }
 
             ParametersEncoder parEncoder;
             ReturnTypeEncoder retEncoder;

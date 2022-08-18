@@ -22,6 +22,7 @@ namespace System.Reflection.Emit.Experimental
             ReflectedType = type;
             DeclaringType = type;
             CallingConvention = callingConvention;
+            Attributes = attributes;
         }
 
         #endregion
@@ -66,7 +67,7 @@ namespace System.Reflection.Emit.Experimental
         // Returns:
         //     Read/write. Gets or sets whether the local variables in this constructor should
         //     be zero-initialized.
-        public bool InitLocals { get; set; }
+        public bool InitLocals => throw new NotImplementedException();
 
         // Summary:
         //     Gets a reference to the System.Type object for the type that declares this member.

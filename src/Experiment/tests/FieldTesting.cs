@@ -5,7 +5,6 @@ using System;
 using System.CodeDom.Compiler;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
 using System.Reflection.Emit.Experimental.Tests;
@@ -36,10 +35,10 @@ namespace Experiment.Tests.Fields
             AssemblyName assemblyName = new AssemblyName("MyDynamicAssembly");
 
             // Construct its types via reflection.
-            Type[] types = new Type[] { typeof(INoMethod2) };
+            Type[] types = new Type[] { typeof(INoMethod2), typeof(IMultipleMethod) };
 
             // Generate DLL from these and save it to Disk.
-            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null);
+            AssemblyTools.WriteAssemblyToDisk(assemblyName, types, _fileLocation, null, true);
 
             // Read said assembly back from Disk using MetadataLoadContext
             Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(_fileLocation);
@@ -595,7 +594,7 @@ namespace Experiment.Tests.Fields
 
     public class INoMethod2
     {
-        internal int[] _numbers = new int[5];
+        public int[] _numbers = new int[5];
         public INoMethod2()
         {
         }
@@ -603,12 +602,7 @@ namespace Experiment.Tests.Fields
 
     public class IMultipleMethod
     {
-        public bool MoreFunc(int[] a, string b, bool c)
-        {
-            return true;
-        }
-
-        private void BuildAPerpetualMotionMachine()
+        public IMultipleMethod()
         {
         }
     }

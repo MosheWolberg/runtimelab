@@ -50,6 +50,19 @@ namespace System.Reflection.Emit.Experimental
         // Wherever possible metadata construction is done in module.
         internal void AppendMetadata()
         {
+            // Get System.Object() constructor
+            MethodBase? ctor = typeof(object).GetConstructor(Type.EmptyTypes);
+            if (ctor == null)
+            {
+                throw new Exception("Unable to locate Sytem.Object constructor");
+            }
+
+            EntityHandle ctorHandle = AddorGetMethodReference(ctor);
+
+            // Set up IL Blobs
+            var methodBodyStream = new MethodBodyStreamEncoder(_ilBuilder);
+            var codeBuilder = new BlobBuilder();
+
             int fieldTempCounter = 1;
             int methodTempCounter = 1;
             int paramTempCounter = 1;
@@ -57,33 +70,6 @@ namespace System.Reflection.Emit.Experimental
             foreach (TypeBuilder typeBuilder in _typeDefStore)
             {
                 TypeDefinitionHandle typeDefintionHandle = MetadataHelper.AddTypeDef(typeBuilder, Metadata, methodTempCounter, fieldTempCounter, typeBuilder._baseToken);
-
-                // Add each method definition to metadata table.
-                foreach (MethodBuilder method in typeBuilder._methodDefStore)
-                {
-                    EntityHandle methodHandle = MetadataHelper.AddMethodDefintion(Metadata, method, this, paramTempCounter);
-
-                    foreach (ParameterBuilder param in method.Parameters)
-                    {
-                        MetadataHelper.AddParamDefintion(Metadata, param, this);
-                        paramTempCounter++;
-                    }
-
-                    methodTempCounter++;
-                }
-
-                // Get System.Object() constructor
-                MethodBase? ctor = typeof(object).GetConstructor(Type.EmptyTypes);
-                if (ctor == null)
-                {
-                    throw new Exception("Unable to locate Sytem.Object constructor");
-                }
-
-                EntityHandle ctorHandle = AddorGetMethodReference(ctor);
-
-                // Set up IL Blobs
-                var methodBodyStream = new MethodBodyStreamEncoder(_ilBuilder);
-                var codeBuilder = new BlobBuilder();
                 InstructionEncoder il;
                 // Add each constructor definition to metadata table.
                 foreach (ConstructorBuilder constructor in typeBuilder._constructorDefStore)
@@ -103,6 +89,20 @@ namespace System.Reflection.Emit.Experimental
                     int ctorBodyOffset = methodBodyStream.AddMethodBody(il);
                     codeBuilder.Clear();
                     MetadataHelper.AddConstructorDefintion(Metadata, constructor, this, ctorBodyOffset);
+                    methodTempCounter++;
+                }
+
+                // Add each method definition to metadata table.
+                foreach (MethodBuilder method in typeBuilder._methodDefStore)
+                {
+                    EntityHandle methodHandle = MetadataHelper.AddMethodDefintion(Metadata, method, this, paramTempCounter);
+
+                    foreach (ParameterBuilder param in method.Parameters)
+                    {
+                        MetadataHelper.AddParamDefintion(Metadata, param, this);
+                        paramTempCounter++;
+                    }
+
                     methodTempCounter++;
                 }
 
